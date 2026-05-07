@@ -1,0 +1,1320 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nurislam's Data Analytics</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --gold: #C9A84C; --gold-light: #E8C97A;
+    --dark: #0D0D0D; --dark2: #141414; --dark3: #1C1C1C;
+    --cream: #F5F0E8; --muted: #888;
+  }
+  html { scroll-behavior: smooth; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--dark); color: var(--cream); overflow-x: hidden; }
+
+  /* REGISTRATION OVERLAY */
+  #reg-overlay {
+    position: fixed; inset: 0; z-index: 9999;
+    background: rgba(13,13,13,0.97);
+    display: flex; align-items: center; justify-content: center;
+    backdrop-filter: blur(8px);
+  }
+  #reg-overlay.hidden { display: none; }
+  .reg-box {
+    background: var(--dark2); border: 1px solid rgba(201,168,76,0.3);
+    border-radius: 4px; padding: 3rem 2.8rem;
+    width: 100%; max-width: 420px; text-align: center;
+    animation: fadeUp .5s ease both;
+  }
+  .reg-logo { font-family:'Playfair Display',serif; font-size:1.4rem; font-weight:700; color:var(--gold); margin-bottom:.4rem; }
+  .reg-sub { font-size:.82rem; color:var(--muted); margin-bottom:2rem; }
+  .reg-label { font-size:.75rem; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); display:block; text-align:left; margin-bottom:.5rem; }
+  .reg-input {
+    width:100%; background:rgba(255,255,255,0.05);
+    border:1px solid rgba(245,240,232,0.12); color:var(--cream);
+    padding:.9rem 1rem; font-family:'DM Sans',sans-serif; font-size:.95rem;
+    border-radius:2px; outline:none; margin-bottom:1.2rem; transition:border-color .2s;
+  }
+  .reg-input:focus { border-color:rgba(201,168,76,0.5); }
+  .reg-btn {
+    width:100%; font-family:'DM Sans',sans-serif; font-size:.88rem; font-weight:500;
+    letter-spacing:.1em; text-transform:uppercase; color:var(--dark); background:var(--gold);
+    border:none; padding:1rem; border-radius:2px; cursor:pointer; transition:background .2s;
+  }
+  .reg-btn:hover { background:var(--gold-light); }
+  .reg-divider { height:1px; background:rgba(201,168,76,0.12); margin:1.5rem 0; }
+  .reg-admin-link { font-size:.78rem; color:var(--muted); cursor:pointer; text-decoration:underline; transition:color .2s; }
+  .reg-admin-link:hover { color:var(--gold); }
+  .admin-tag { font-size:.7rem; letter-spacing:.15em; color:var(--gold); text-transform:uppercase; margin-bottom:1rem; }
+
+  /* ADMIN DASHBOARD */
+  #admin-dash { position:fixed; inset:0; z-index:9998; background:var(--dark); display:none; flex-direction:column; }
+  #admin-dash.show { display:flex; }
+  .admin-nav { display:flex; align-items:center; justify-content:space-between; padding:1rem 2rem; background:var(--dark2); border-bottom:1px solid rgba(201,168,76,0.15); flex-shrink:0; }
+  .admin-nav-logo { font-family:'Playfair Display',serif; font-size:1rem; font-weight:700; color:var(--gold); }
+  .admin-nav-tag { font-size:.72rem; color:var(--muted); letter-spacing:.1em; text-transform:uppercase; }
+  .admin-nav-exit { font-size:.78rem; color:var(--muted); cursor:pointer; padding:.4rem 1rem; border:1px solid rgba(245,240,232,0.1); border-radius:2px; transition:all .2s; }
+  .admin-nav-exit:hover { border-color:var(--gold); color:var(--gold); }
+  .admin-body { display:flex; flex:1; overflow:hidden; }
+  .admin-sidebar { width:280px; flex-shrink:0; background:var(--dark2); border-right:1px solid rgba(201,168,76,0.1); display:flex; flex-direction:column; overflow-y:auto; }
+  .admin-sidebar-title { font-size:.7rem; letter-spacing:.15em; text-transform:uppercase; color:var(--muted); padding:1.2rem 1.5rem .6rem; }
+  .user-item { display:flex; align-items:center; gap:10px; padding:.8rem 1.5rem; cursor:pointer; border-left:2px solid transparent; transition:all .15s; }
+  .user-item:hover { background:rgba(201,168,76,0.05); border-left-color:rgba(201,168,76,0.3); }
+  .user-item.active { background:rgba(201,168,76,0.08); border-left-color:var(--gold); }
+  .u-avatar { width:34px; height:34px; border-radius:50%; background:rgba(201,168,76,0.15); border:1px solid rgba(201,168,76,0.25); display:flex; align-items:center; justify-content:center; font-size:.85rem; font-weight:500; color:var(--gold); flex-shrink:0; }
+  .u-name { font-size:.88rem; font-weight:500; }
+  .u-time { font-size:.72rem; color:var(--muted); }
+  .u-badge { margin-left:auto; background:var(--gold); color:var(--dark); font-size:.65rem; font-weight:600; width:18px; height:18px; border-radius:50%; display:flex; align-items:center; justify-content:center; }
+  .admin-main { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+  .admin-chat-header { padding:1rem 1.5rem; border-bottom:1px solid rgba(201,168,76,0.1); display:flex; align-items:center; gap:12px; flex-shrink:0; background:var(--dark2); }
+  .admin-chat-user { font-size:.95rem; font-weight:500; }
+  .admin-chat-sub { font-size:.78rem; color:var(--muted); }
+  .admin-msgs { flex:1; overflow-y:auto; padding:1.5rem; display:flex; flex-direction:column; gap:1rem; }
+  .admin-empty { text-align:center; color:var(--muted); font-size:.9rem; margin:auto; }
+  .admin-no-selection { display:flex; align-items:center; justify-content:center; flex:1; color:var(--muted); font-size:.9rem; }
+  .am { max-width:75%; }
+  .am.user { align-self:flex-end; }
+  .am.assistant { align-self:flex-start; }
+  .am-bubble { padding:.75rem 1rem; border-radius:12px; font-size:.88rem; line-height:1.6; }
+  .am.user .am-bubble { background:rgba(201,168,76,0.15); border:1px solid rgba(201,168,76,0.2); }
+  .am.assistant .am-bubble { background:var(--dark3); border:1px solid rgba(245,240,232,0.06); }
+  .am-meta { font-size:.7rem; color:var(--muted); margin-top:.3rem; }
+  .am.user .am-meta { text-align:right; }
+
+  /* AI MODAL */
+  #ai-modal { position:fixed; inset:0; z-index:500; background:rgba(13,13,13,0.92); display:none; align-items:center; justify-content:center; backdrop-filter:blur(6px); }
+  #ai-modal.show { display:flex; }
+  .ai-dash { width:100%; max-width:860px; height:92vh; background:var(--dark2); border:1px solid rgba(201,168,76,0.2); border-radius:6px; display:flex; flex-direction:column; overflow:hidden; animation:fadeUp .3s ease both; }
+  .ai-header { display:flex; align-items:center; justify-content:space-between; padding:1rem 1.5rem; background:var(--dark3); border-bottom:1px solid rgba(201,168,76,0.12); flex-shrink:0; }
+  .ai-dot { width:8px; height:8px; border-radius:50%; background:#4CAF50; animation:pulse 2s infinite; }
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+  .ai-title { font-size:.95rem; font-weight:500; }
+  .ai-subtitle { font-size:.75rem; color:var(--muted); }
+  .ai-close { font-size:1.2rem; color:var(--muted); cursor:pointer; padding:.2rem .5rem; border-radius:2px; transition:color .2s; background:none; border:none; }
+  .ai-close:hover { color:var(--cream); }
+  .ai-panel { display:none; flex:1; flex-direction:column; overflow:hidden; }
+  .ai-panel.active { display:flex; }
+  .ai-messages { flex:1; overflow-y:auto; padding:1.5rem; display:flex; flex-direction:column; gap:1rem; }
+  .ai-msg { max-width:78%; animation:fadeUp .25s ease both; }
+  .ai-msg.user { align-self:flex-end; }
+
+  /* QUIZ STYLES */
+  .quiz-screen { flex:1; overflow-y:auto; padding:2rem 1.5rem; display:flex; flex-direction:column; gap:0; }
+  .quiz-progress-bar { height:3px; background:rgba(201,168,76,0.15); border-radius:2px; margin-bottom:1.5rem; flex-shrink:0; }
+  .quiz-progress-fill { height:100%; background:linear-gradient(90deg,var(--gold),var(--gold-light)); border-radius:2px; transition:width .4s ease; }
+  .quiz-step { animation:fadeUp .3s ease both; }
+  .quiz-q-num { font-size:.72rem; letter-spacing:.15em; text-transform:uppercase; color:var(--gold); margin-bottom:.5rem; }
+  .quiz-q-text { font-family:'Playfair Display',serif; font-size:1.3rem; font-weight:700; color:var(--cream); margin-bottom:.4rem; line-height:1.3; }
+  .quiz-q-sub { font-size:.85rem; color:var(--muted); margin-bottom:1.5rem; line-height:1.5; }
+  .quiz-options { display:flex; flex-direction:column; gap:.6rem; }
+  .quiz-opt { display:flex; align-items:center; gap:.9rem; padding:.85rem 1.1rem; background:rgba(255,255,255,0.03); border:1px solid rgba(245,240,232,0.08); border-radius:8px; cursor:pointer; transition:all .2s; text-align:left; width:100%; font-family:'DM Sans',sans-serif; color:var(--cream); font-size:.9rem; }
+  .quiz-opt:hover { background:rgba(201,168,76,0.08); border-color:rgba(201,168,76,0.3); }
+  .quiz-opt.selected { background:rgba(201,168,76,0.12); border-color:var(--gold); color:var(--cream); }
+  .quiz-opt-icon { font-size:1.1rem; flex-shrink:0; }
+  .quiz-opt-text { flex:1; line-height:1.4; }
+  .quiz-nav { display:flex; align-items:center; justify-content:space-between; padding:1rem 1.5rem; border-top:1px solid rgba(201,168,76,0.1); background:var(--dark2); flex-shrink:0; }
+  .quiz-back-btn { background:none; border:1px solid rgba(245,240,232,0.1); color:var(--muted); padding:.65rem 1.2rem; border-radius:6px; cursor:pointer; font-family:'DM Sans',sans-serif; font-size:.85rem; transition:all .2s; }
+  .quiz-back-btn:hover { border-color:rgba(201,168,76,0.3); color:var(--gold); }
+  .quiz-next-btn { background:var(--gold); color:var(--dark); border:none; padding:.65rem 1.6rem; border-radius:6px; cursor:pointer; font-family:'DM Sans',sans-serif; font-size:.88rem; font-weight:600; transition:background .2s; }
+  .quiz-next-btn:hover { background:var(--gold-light); }
+  .quiz-next-btn:disabled { opacity:.4; cursor:not-allowed; }
+  .quiz-input-text { width:100%; background:rgba(255,255,255,0.05); border:1px solid rgba(245,240,232,0.1); color:var(--cream); padding:.85rem 1rem; border-radius:8px; font-family:'DM Sans',sans-serif; font-size:.9rem; outline:none; resize:none; min-height:80px; transition:border-color .2s; margin-top:.5rem; }
+  .quiz-input-text:focus { border-color:rgba(201,168,76,0.4); }
+  .quiz-input-text::placeholder { color:rgba(136,136,136,0.6); }
+
+  /* RESULT SCREEN */
+  .result-screen { flex:1; overflow-y:auto; padding:1.5rem; display:flex; flex-direction:column; gap:1rem; }
+  .result-loading { display:flex; flex-direction:column; align-items:center; justify-content:center; flex:1; gap:1rem; color:var(--muted); }
+  .result-spinner { width:40px; height:40px; border:3px solid rgba(201,168,76,0.2); border-top-color:var(--gold); border-radius:50%; animation:spin .8s linear infinite; }
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .result-loading-text { font-size:.88rem; color:var(--muted); text-align:center; line-height:1.6; }
+  .result-card { background:var(--dark3); border:1px solid rgba(201,168,76,0.15); border-radius:10px; padding:1.5rem; }
+  .result-card-title { font-size:.72rem; letter-spacing:.15em; text-transform:uppercase; color:var(--gold); margin-bottom:1rem; display:flex; align-items:center; gap:.5rem; }
+  .result-card-body { font-size:.9rem; color:var(--cream); line-height:1.75; }
+  .result-card-body strong { color:var(--gold-light); }
+  .result-card-body ul { margin:.5rem 0 .5rem 1.2rem; }
+  .result-card-body li { margin-bottom:.3rem; color:var(--muted); }
+  .result-restart-btn { background:none; border:1px solid rgba(201,168,76,0.3); color:var(--gold); padding:.7rem 1.5rem; border-radius:6px; cursor:pointer; font-family:'DM Sans',sans-serif; font-size:.85rem; transition:all .2s; align-self:flex-start; margin-top:.5rem; }
+  .result-restart-btn:hover { background:rgba(201,168,76,0.1); }
+
+
+  .ai-msg.assistant { align-self:flex-start; }
+  .ai-msg-bubble { padding:.85rem 1.1rem; border-radius:12px; font-size:.9rem; line-height:1.65; }
+  .ai-msg.user .ai-msg-bubble { background:rgba(201,168,76,0.18); border:1px solid rgba(201,168,76,0.25); }
+  .ai-msg.assistant .ai-msg-bubble { background:var(--dark3); border:1px solid rgba(245,240,232,0.07); }
+  .ai-msg-name { font-size:.7rem; color:var(--muted); margin-bottom:.3rem; }
+  .ai-msg.user .ai-msg-name { text-align:right; }
+  .typing-indicator { display:flex; gap:4px; align-items:center; padding:.85rem 1.1rem; }
+  .typing-dot { width:6px; height:6px; border-radius:50%; background:var(--muted); animation:typingBounce 1.2s infinite; }
+  .typing-dot:nth-child(2){animation-delay:.2s}
+  .typing-dot:nth-child(3){animation-delay:.4s}
+  @keyframes typingBounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
+  .ai-input-area { padding:1rem 1.5rem; border-top:1px solid rgba(201,168,76,0.1); display:flex; gap:10px; align-items:flex-end; flex-shrink:0; background:var(--dark2); }
+  .ai-textarea { flex:1; background:rgba(255,255,255,0.05); border:1px solid rgba(245,240,232,0.1); color:var(--cream); padding:.75rem 1rem; font-family:'DM Sans',sans-serif; font-size:.9rem; border-radius:8px; outline:none; resize:none; transition:border-color .2s; min-height:44px; max-height:120px; }
+  .ai-textarea:focus { border-color:rgba(201,168,76,0.4); }
+  .ai-send { font-family:'DM Sans',sans-serif; background:var(--gold); color:var(--dark); border:none; padding:.75rem 1.2rem; border-radius:8px; cursor:pointer; font-size:.85rem; font-weight:500; transition:background .2s; white-space:nowrap; flex-shrink:0; }
+  .ai-send:hover { background:var(--gold-light); }
+  .ai-send:disabled { opacity:.5; cursor:not-allowed; }
+  .ai-analysis-content { flex:1; overflow-y:auto; padding:1.5rem; display:flex; flex-direction:column; gap:1rem; }
+  .analysis-prompt-area { display:flex; gap:10px; padding:1rem 1.5rem; border-top:1px solid rgba(201,168,76,0.1); flex-shrink:0; flex-wrap:wrap; }
+  .analysis-select { background:rgba(255,255,255,0.05); border:1px solid rgba(245,240,232,0.1); color:var(--cream); padding:.6rem .8rem; border-radius:8px; font-family:'DM Sans',sans-serif; font-size:.85rem; outline:none; cursor:pointer; }
+  .analysis-run { background:var(--gold); color:var(--dark); border:none; padding:.6rem 1.2rem; border-radius:8px; cursor:pointer; font-size:.85rem; font-weight:500; transition:background .2s; white-space:nowrap; }
+  .analysis-run:hover { background:var(--gold-light); }
+  .analysis-card { background:var(--dark3); border:1px solid rgba(201,168,76,0.12); border-radius:8px; padding:1.2rem; }
+  .analysis-card-title { font-size:.8rem; letter-spacing:.1em; text-transform:uppercase; color:var(--gold); margin-bottom:.8rem; }
+  .analysis-card-body { font-size:.88rem; color:var(--muted); line-height:1.7; }
+  .analysis-loading { text-align:center; color:var(--muted); font-size:.88rem; padding:2rem; }
+
+  /* NAV */
+  nav { position:fixed; top:0; left:0; right:0; z-index:100; display:flex; align-items:center; justify-content:space-between; padding:1.4rem 4rem; background:rgba(13,13,13,0.85); backdrop-filter:blur(12px); border-bottom:1px solid rgba(201,168,76,0.15); }
+  .nav-logo { font-family:'Playfair Display',serif; font-size:1.25rem; font-weight:700; color:var(--gold); letter-spacing:.02em; text-decoration:none; }
+  .nav-links { display:flex; gap:2.5rem; list-style:none; }
+  .nav-links a { font-size:.85rem; font-weight:400; color:var(--muted); text-decoration:none; letter-spacing:.08em; text-transform:uppercase; transition:color .2s; }
+  .nav-links a:hover { color:var(--gold); }
+  .nav-cta { font-size:.8rem; font-weight:500; color:var(--dark); background:var(--gold); padding:.6rem 1.4rem; border-radius:2px; text-decoration:none; letter-spacing:.06em; text-transform:uppercase; transition:background .2s; border:none; cursor:pointer; }
+  .nav-cta:hover { background:var(--gold-light); }
+  .nav-user-badge { font-size:.78rem; color:var(--gold); border:1px solid rgba(201,168,76,0.3); padding:.3rem .8rem; border-radius:2px; }
+
+  /* HERO */
+  .hero { min-height:100vh; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; padding:8rem 4rem 4rem; }
+  .hero-bg { position:absolute; inset:0; background:radial-gradient(ellipse 60% 50% at 70% 40%, rgba(201,168,76,0.08) 0%, transparent 60%),radial-gradient(ellipse 40% 60% at 20% 70%, rgba(201,168,76,0.04) 0%, transparent 50%),var(--dark); }
+  .hero-line { position:absolute; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,rgba(201,168,76,0.3),transparent); animation:shimmer 3s ease-in-out infinite; }
+  .hero-line:nth-child(1){top:30%}
+  .hero-line:nth-child(2){top:60%;animation-delay:1.5s}
+  @keyframes shimmer{0%,100%{opacity:0}50%{opacity:1}}
+  .hero-content { position:relative; z-index:2; max-width:900px; text-align:center; animation:fadeUp 1s ease both; }
+  @keyframes fadeUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+  .hero-tag { display:inline-block; font-size:.75rem; letter-spacing:.2em; text-transform:uppercase; color:var(--gold); border:1px solid rgba(201,168,76,0.35); padding:.4rem 1.2rem; border-radius:1px; margin-bottom:2.5rem; animation:fadeUp 1s ease .1s both; }
+  .hero-title { font-family:'Playfair Display',serif; font-size:clamp(3rem,7vw,6rem); font-weight:900; line-height:1.05; margin-bottom:1.5rem; animation:fadeUp 1s ease .2s both; }
+  .hero-title em { font-style:italic; color:var(--gold); }
+  .hero-sub { font-size:1.1rem; font-weight:300; color:var(--muted); line-height:1.7; max-width:560px; margin:0 auto 3rem; animation:fadeUp 1s ease .3s both; }
+  .hero-btns { display:flex; gap:1rem; justify-content:center; flex-wrap:wrap; animation:fadeUp 1s ease .4s both; }
+  .btn-primary { font-size:.85rem; font-weight:500; letter-spacing:.08em; text-transform:uppercase; color:var(--dark); background:var(--gold); padding:1rem 2.4rem; border-radius:2px; text-decoration:none; transition:background .2s,transform .15s; border:none; cursor:pointer; }
+  .btn-primary:hover { background:var(--gold-light); transform:translateY(-1px); }
+  .btn-outline { font-size:.85rem; font-weight:400; letter-spacing:.08em; text-transform:uppercase; color:var(--cream); border:1px solid rgba(245,240,232,0.25); padding:1rem 2.4rem; border-radius:2px; text-decoration:none; transition:border-color .2s; }
+  .btn-outline:hover { border-color:var(--gold); color:var(--gold); }
+
+  /* SECTIONS */
+  section { padding:7rem 4rem; }
+  .section-tag { font-size:.72rem; letter-spacing:.2em; text-transform:uppercase; color:var(--gold); margin-bottom:1rem; }
+  .section-title { font-family:'Playfair Display',serif; font-size:clamp(2rem,4vw,3.2rem); font-weight:700; line-height:1.1; margin-bottom:1.2rem; }
+  .section-sub { font-size:1rem; font-weight:300; color:var(--muted); line-height:1.7; max-width:500px; }
+
+  /* SERVICES */
+  #services { background:var(--dark2); }
+  .services-header { display:grid; grid-template-columns:1fr 1fr; align-items:end; gap:2rem; margin-bottom:4rem; }
+  .services-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:rgba(201,168,76,0.1); border:1px solid rgba(201,168,76,0.1); }
+  .service-card { background:var(--dark2); padding:2.5rem; position:relative; overflow:hidden; transition:background .25s; }
+  .service-card:hover { background:var(--dark3); }
+  .service-card::after { content:''; position:absolute; bottom:0; left:0; right:0; height:2px; background:var(--gold); transform:scaleX(0); transition:transform .3s; transform-origin:left; }
+  .service-card:hover::after { transform:scaleX(1); }
+  .service-num { font-family:'Playfair Display',serif; font-size:.75rem; color:var(--gold); letter-spacing:.15em; margin-bottom:1rem; display:block; }
+  .service-name { font-family:'Playfair Display',serif; font-size:1.3rem; font-weight:700; margin-bottom:.8rem; }
+  .service-desc { font-size:.88rem; color:var(--muted); line-height:1.7; }
+
+  /* WHY */
+  #why { display:grid; grid-template-columns:1fr 1fr; gap:6rem; align-items:center; }
+  .why-visual { position:relative; height:380px; }
+  .why-card-main { position:absolute; top:0; left:0; right:60px; height:260px; background:var(--dark3); border:1px solid rgba(201,168,76,0.2); border-radius:2px; padding:2rem; display:flex; flex-direction:column; justify-content:flex-end; }
+  .why-card-accent { position:absolute; bottom:0; right:0; left:60px; height:170px; background:var(--gold); border-radius:2px; padding:1.5rem; display:flex; flex-direction:column; justify-content:center; }
+  .portrait-placeholder { width:100%; height:100%; background:linear-gradient(135deg,rgba(201,168,76,0.15),rgba(201,168,76,0.03)); display:flex; align-items:center; justify-content:center; font-size:4rem; }
+  .big-num { font-family:'Playfair Display',serif; font-size:3rem; font-weight:900; color:var(--dark); line-height:1; }
+  .big-label { font-size:.78rem; font-weight:500; color:rgba(13,13,13,0.6); text-transform:uppercase; letter-spacing:.1em; margin-top:.4rem; }
+  .why-list { margin-top:2.5rem; display:flex; flex-direction:column; gap:1.5rem; }
+  .why-item { display:flex; gap:1.2rem; align-items:flex-start; }
+  .why-dot { width:6px; height:6px; border-radius:50%; background:var(--gold); flex-shrink:0; margin-top:.45rem; }
+  .why-item-title { font-size:.95rem; font-weight:500; color:var(--cream); margin-bottom:.2rem; }
+  .why-item-text { font-size:.9rem; color:var(--muted); line-height:1.65; }
+
+  /* PROCESS */
+  #process { background:var(--dark2); }
+  .process-header { text-align:center; margin-bottom:5rem; }
+  .process-header .section-sub { margin:0 auto; }
+  .process-steps { display:grid; grid-template-columns:repeat(4,1fr); position:relative; }
+  .process-steps::before { content:''; position:absolute; top:2.5rem; left:12.5%; right:12.5%; height:1px; background:linear-gradient(90deg,transparent,var(--gold),transparent); opacity:.3; }
+  .process-step { padding:0 1.5rem; text-align:center; }
+  .step-circle { width:48px; height:48px; border-radius:50%; border:1px solid rgba(201,168,76,0.4); display:flex; align-items:center; justify-content:center; margin:0 auto 1.8rem; font-family:'Playfair Display',serif; font-size:1rem; font-weight:700; color:var(--gold); background:var(--dark2); position:relative; z-index:1; }
+  .step-title { font-family:'Playfair Display',serif; font-size:1.1rem; font-weight:700; margin-bottom:.8rem; }
+  .step-desc { font-size:.84rem; color:var(--muted); line-height:1.65; }
+
+  /* TESTIMONIALS */
+  .testimonials-header { text-align:center; margin-bottom:4rem; }
+  .testimonials-header .section-sub { margin:0 auto; }
+  .testi-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:1.5rem; }
+  .testi-card { background:var(--dark2); border:1px solid rgba(201,168,76,0.1); border-radius:2px; padding:2.2rem; position:relative; }
+  .testi-card::before { content:'"'; font-family:'Playfair Display',serif; font-size:5rem; color:var(--gold); opacity:.15; position:absolute; top:.5rem; left:1.5rem; line-height:1; }
+  .testi-text { font-size:.92rem; color:var(--muted); line-height:1.75; margin-bottom:1.8rem; position:relative; z-index:1; }
+  .testi-author { display:flex; align-items:center; gap:1rem; }
+  .testi-avatar { width:42px; height:42px; border-radius:50%; background:rgba(201,168,76,0.15); border:1px solid rgba(201,168,76,0.3); display:flex; align-items:center; justify-content:center; font-size:1.1rem; }
+  .testi-name { font-size:.88rem; font-weight:500; }
+  .testi-role { font-size:.78rem; color:var(--muted); }
+
+  /* CONTACT */
+  #contact { background:var(--dark2); }
+  .contact-wrap { display:grid; grid-template-columns:1fr 1fr; gap:6rem; align-items:start; }
+  .contact-detail { display:flex; gap:1.2rem; align-items:flex-start; margin-bottom:2rem; padding-bottom:2rem; border-bottom:1px solid rgba(245,240,232,0.06); }
+  .contact-detail:last-child { border-bottom:none; }
+  .contact-icon { font-size:1.3rem; flex-shrink:0; margin-top:.1rem; }
+  .contact-detail-label { font-size:.75rem; letter-spacing:.1em; text-transform:uppercase; color:var(--gold); margin-bottom:.3rem; }
+  .contact-detail-val { font-size:.95rem; color:var(--cream); }
+  .contact-detail-val a { color:var(--cream); text-decoration:none; transition:color .2s; }
+  .contact-detail-val a:hover { color:var(--gold); }
+
+  /* FOOTER */
+  footer { padding:2.5rem 4rem; border-top:1px solid rgba(245,240,232,0.06); display:flex; align-items:center; justify-content:space-between; }
+  .footer-logo { font-family:'Playfair Display',serif; font-size:1.1rem; font-weight:700; color:var(--gold); }
+  .footer-copy { font-size:.8rem; color:var(--muted); }
+  .footer-links { display:flex; gap:2rem; }
+  .footer-links a { font-size:.8rem; color:var(--muted); text-decoration:none; transition:color .2s; }
+  .footer-links a:hover { color:var(--gold); }
+
+  .reveal { opacity:0; transform:translateY(24px); transition:opacity .7s ease,transform .7s ease; }
+  .reveal.visible { opacity:1; transform:none; }
+
+  @media(max-width:900px){
+    nav{padding:1.2rem 1.5rem}
+    .nav-links{display:none}
+    section{padding:5rem 1.5rem}
+    .hero{padding:7rem 1.5rem 4rem}
+    .services-header,#why,.contact-wrap{grid-template-columns:1fr}
+    .services-grid{grid-template-columns:1fr}
+    .process-steps{grid-template-columns:1fr 1fr}
+    .testi-grid{grid-template-columns:1fr}
+    footer{flex-direction:column;gap:1rem;text-align:center}
+    .ai-dash{height:100vh;border-radius:0}
+    .analysis-prompt-area{flex-direction:column}
+  }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+
+<!-- AUTH OVERLAY -->
+<div id="reg-overlay">
+  <div class="reg-box">
+    <div class="reg-logo">Nurislam's</div>
+    <div class="reg-sub">Business Advice platformasiga xush kelibsiz</div>
+
+    <!-- TABS -->
+    <div style="display:flex;gap:0;margin-bottom:1.8rem;border:1px solid rgba(201,168,76,0.2);border-radius:4px;overflow:hidden">
+      <button id="tab-login-btn" onclick="switchAuthTab('login')" style="flex:1;padding:.7rem;font-family:'DM Sans',sans-serif;font-size:.82rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;transition:all .2s;background:var(--gold);color:var(--dark);border:none">Kirish</button>
+      <button id="tab-reg-btn" onclick="switchAuthTab('register')" style="flex:1;padding:.7rem;font-family:'DM Sans',sans-serif;font-size:.82rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;transition:all .2s;background:transparent;color:var(--muted);border:none">Ro'yxatdan o'tish</button>
+    </div>
+
+    <!-- LOGIN -->
+    <div id="tab-login">
+      <label class="reg-label">Email</label>
+      <input class="reg-input" id="login-email" type="email" placeholder="email@gmail.com" autocomplete="email">
+      <label class="reg-label">Parol</label>
+      <input class="reg-input" id="login-password" type="password" placeholder="••••••••" autocomplete="current-password">
+      <div id="login-error" style="font-size:.78rem;color:#ff6b6b;margin-bottom:.8rem;min-height:18px;text-align:left"></div>
+      <button class="reg-btn" id="login-btn" onclick="doLogin()">Kirish →</button>
+      <div class="reg-divider"></div>
+      <span class="reg-admin-link" onclick="toggleAdminLogin()">Admin sifatida kirish</span>
+    </div>
+
+    <!-- REGISTER -->
+    <div id="tab-register" style="display:none">
+      <label class="reg-label">Ismingiz</label>
+      <input class="reg-input" id="reg-name" type="text" placeholder="Masalan: Jasur Abduvohidov" autocomplete="name">
+      <label class="reg-label">Email (Gmail)</label>
+      <input class="reg-input" id="reg-email" type="email" placeholder="email@gmail.com" autocomplete="email">
+      <label class="reg-label">Parol (kamida 6 ta belgi)</label>
+      <input class="reg-input" id="reg-password" type="password" placeholder="••••••••" autocomplete="new-password">
+      <div id="reg-error" style="font-size:.78rem;color:#ff6b6b;margin-bottom:.8rem;min-height:18px;text-align:left"></div>
+      <button class="reg-btn" id="reg-btn" onclick="doRegister()">Ro'yxatdan o'tish →</button>
+    </div>
+
+    <!-- ADMIN LOGIN -->
+    <div id="admin-login-section" style="display:none">
+      <div class="admin-tag">Admin paneli</div>
+      <label class="reg-label">Admin parol</label>
+      <input class="reg-input" id="admin-pass" type="password" placeholder="Parolni kiriting">
+      <button class="reg-btn" onclick="adminLogin()" style="background:var(--dark3);color:var(--gold);border:1px solid rgba(201,168,76,0.3);margin-bottom:.8rem">Admin kirish</button>
+      <br><span class="reg-admin-link" onclick="toggleAdminLogin()">← Orqaga</span>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN DASHBOARD -->
+<div id="admin-dash">
+  <div class="admin-nav">
+    <div>
+      <div class="admin-nav-logo">Nurislam's — Admin Panel</div>
+      <div class="admin-nav-tag">Foydalanuvchilar va suhbatlar</div>
+    </div>
+    <div onclick="exitAdmin()" class="admin-nav-exit">Chiqish</div>
+  </div>
+  <div class="admin-body">
+    <div class="admin-sidebar">
+      <div class="admin-sidebar-title">Ro'yxatdan o'tganlar</div>
+      <div id="admin-user-list"></div>
+    </div>
+    <div class="admin-main">
+      <div id="admin-no-sel" class="admin-no-selection">Foydalanuvchini tanlang</div>
+      <div id="admin-chat-view" style="display:none;flex-direction:column;flex:1;overflow:hidden">
+        <div class="admin-chat-header">
+          <div class="u-avatar" id="admin-sel-avatar"></div>
+          <div>
+            <div class="admin-chat-user" id="admin-sel-name"></div>
+            <div class="admin-chat-sub" id="admin-sel-time"></div>
+          </div>
+        </div>
+        <div class="admin-msgs" id="admin-chat-msgs">
+          <div class="admin-empty">Bu foydalanuvchi hali AI bilan suhbat qilmagan.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- AI MODAL -->
+<div id="ai-modal">
+  <div class="ai-dash">
+    <div class="ai-header">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="ai-dot"></div>
+        <div>
+          <div class="ai-title">AI Biznes Maslahatchi</div>
+          <div class="ai-subtitle" id="ai-user-label">Biznesingizni tahlil qilamiz</div>
+        </div>
+      </div>
+      <button class="ai-close" onclick="closeAI()">✕</button>
+    </div>
+
+    <!-- QUIZ SCREEN -->
+    <div id="quiz-screen" style="display:flex;flex-direction:column;flex:1;overflow:hidden;">
+      <div style="padding:.75rem 1.5rem;background:var(--dark3);border-bottom:1px solid rgba(201,168,76,0.08);flex-shrink:0">
+        <div class="quiz-progress-bar"><div class="quiz-progress-fill" id="quiz-progress" style="width:10%"></div></div>
+        <div style="font-size:.75rem;color:var(--muted);text-align:right" id="quiz-step-label">Savol 1 / 10</div>
+      </div>
+      <div class="quiz-screen" id="quiz-content"></div>
+      <div class="quiz-nav">
+        <button class="quiz-back-btn" id="quiz-back" onclick="quizBack()" style="visibility:hidden">← Orqaga</button>
+
+        <button class="quiz-next-btn" id="quiz-next" onclick="quizNext()" disabled>Davom etish →</button>
+      </div>
+    </div>
+
+    <!-- RESULT SCREEN -->
+    <div id="result-screen" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
+      <div class="result-screen" id="result-content">
+        <div class="result-loading" id="result-loading">
+          <div class="result-spinner"></div>
+          <div class="result-loading-text">AI biznesingizni chuqur tahlil qilmoqda...<br><span style="font-size:.78rem;opacity:.6">Iltimos kuting, 10-20 soniya</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN SITE -->
+<nav>
+  <a href="#" class="nav-logo">Nurislam's Analytics</a>
+  <ul class="nav-links">
+    <li><a href="#services">Xizmatlar</a></li>
+    <li><a href="#why">Haqida</a></li>
+    <li><a href="#process">Jarayon</a></li>
+    <li><a href="#testimonials">Fikrlar</a></li>
+  </ul>
+  <div style="display:flex;align-items:center;gap:.5rem">
+    <span class="nav-user-badge" id="nav-user-name" style="display:none"></span>
+    <a href="https://t.me/nurislomai" target="_blank" class="nav-cta" style="background:rgba(0,136,204,0.15);color:#7dcfee;border:1px solid rgba(0,136,204,0.4);margin-right:.4rem">✈️ Bog'lanish</a>
+    <button class="nav-cta" onclick="openAI()">AI Maslahat</button>
+  </div>
+</nav>
+
+<!-- FLOATING TELEGRAM BUTTON -->
+<a href="https://t.me/nurislomai" target="_blank" id="tg-float" style="
+  position:fixed;bottom:2rem;right:2rem;z-index:400;
+  background:linear-gradient(135deg,#0088cc,#006fa6);
+  color:#fff;border-radius:50px;padding:.9rem 1.6rem;
+  font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:600;
+  text-decoration:none;display:flex;align-items:center;gap:.6rem;
+  box-shadow:0 4px 24px rgba(0,136,204,0.4);
+  transition:transform .2s,box-shadow .2s;
+  animation:fadeUp .6s ease 1s both;
+" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 32px rgba(0,136,204,0.55)'" onmouseout="this.style.transform='';this.style.boxShadow='0 4px 24px rgba(0,136,204,0.4)'">
+  <span style="font-size:1.3rem">✈️</span>
+  <div>
+    <div>Nurislam bilan bog'laning</div>
+    <div style="font-size:.72rem;opacity:.8;font-weight:400">@nurislomai · tez javob</div>
+  </div>
+</a>
+
+<section class="hero">
+  <div class="hero-bg">
+    <div class="hero-line"></div>
+    <div class="hero-line"></div>
+  </div>
+  <div class="hero-content">
+    <span class="hero-tag">✦ Data Analitika & AI Maslahat</span>
+    <h1 class="hero-title">Ma'lumotlar<br><em>kuchidan</em><br>foydalaning</h1>
+    <p class="hero-sub">Nurislam's Data Analytics — biznesingiz ma'lumotlarini chuqur tahlil qilib, aniq qarorlar qabul qilishga yordam beramiz. AI va data science yordamida o'sishni tezlashtiring.</p>
+    <div class="hero-btns">
+      <button class="btn-primary" onclick="openAI()">AI Maslahat Olish</button>
+      <a href="https://t.me/nurislomai" target="_blank" class="btn-outline" style="display:inline-flex;align-items:center;gap:.5rem;font-size:1rem;padding:1rem 2.6rem;background:rgba(0,136,204,0.12);border-color:rgba(0,136,204,0.4);color:#7dcfee">✈️ Telegramda Bog'lanish</a>
+    </div>
+  </div>
+</section>
+
+<section id="services">
+  <div class="services-header reveal">
+    <div>
+      <div class="section-tag">✦ Xizmatlarimiz</div>
+      <h2 class="section-title">Data Analitika<br>bo'yicha barcha<br>yechimlar</h2>
+    </div>
+    <p class="section-sub">Har bir biznes o'ziga xos ma'lumotlarga ega. Biz ularni tahlil qilib, aniq va foydali insight'lar chiqarib beramiz.</p>
+  </div>
+  <div class="services-grid reveal">
+    <div class="service-card"><span class="service-num">01</span><div class="service-name">Biznes Analitika</div><p class="service-desc">Kompaniya ma'lumotlarini chuqur tahlil qilib, savdo, daromad va xarajat trendlarini aniqlaymiz.</p></div>
+    <div class="service-card"><span class="service-num">02</span><div class="service-name">Bozor Tahlili</div><p class="service-desc">Bozor o'lchamlari, raqobat tahlili va mijozlar segmentatsiyasini data asosida baholaymiz.</p></div>
+    <div class="service-card"><span class="service-num">03</span><div class="service-name">AI & ML Yechimlar</div><p class="service-desc">Suniy intellekt va mashina o'qitish yordamida biznesingiz uchun avtomatik bashorat tizimlari yaratamiz.</p></div>
+    <div class="service-card"><span class="service-num">04</span><div class="service-name">Dashboard & Vizualizatsiya</div><p class="service-desc">Ma'lumotlaringizni interaktiv dashboardlar va grafiklarda ko'rsatib, qaror qabul qilishni osonlashtiradi.</p></div>
+    <div class="service-card"><span class="service-num">05</span><div class="service-name">KPI Monitoring</div><p class="service-desc">Asosiy ko'rsatkichlaringizni real vaqtda kuzatib borish va avtomatik hisobotlar tizimini o'rnatamiz.</p></div>
+    <div class="service-card"><span class="service-num">06</span><div class="service-name">Ma'lumotlar Strategiyasi</div><p class="service-desc">Data-driven qarorlar qabul qilish madaniyatini joriy etish va jamoangizni analytics bo'yicha o'qitamiz.</p></div>
+  </div>
+</section>
+
+<section id="why">
+  <div class="why-visual reveal">
+    <div class="why-card-main"><div class="portrait-placeholder">👔</div></div>
+    <div class="why-card-accent"><div class="big-num">AI</div><div class="big-label">Maslahat 24/7</div></div>
+  </div>
+  <div class="reveal">
+    <div class="section-tag">✦ Nima uchun biz</div>
+    <h2 class="section-title">Data bilan<br>biznesingiz<br>o'sadi</h2>
+    <p class="section-sub">Ma'lumotlar asosida qarorlar qabul qiladigan kompaniyalar raqobatda 5x oldinda bo'ladi.</p>
+    <div class="why-list">
+      <div class="why-item"><div class="why-dot"></div><div><div class="why-item-title">Amaliy data tajribasi</div><div class="why-item-text">Real loyihalar asosida to'plangan analytics tajribasi bilan biznesingiz uchun eng mos yechimni topamiz.</div></div></div>
+      <div class="why-item"><div class="why-dot"></div><div><div class="why-item-title">AI + Data yondashuvi</div><div class="why-item-text">Sun'iy intellekt va data science metodologiyasini birlashtiriб, chuqurroq insight'lar chiqaramiz.</div></div></div>
+      <div class="why-item"><div class="why-dot"></div><div><div class="why-item-title">O'lchanadigan natijalar</div><div class="why-item-text">Har bir tahlil aniq KPI va metrikalar bilan bog'langan — natijani raqamlarda ko'rasiz.</div></div></div>
+      <div class="why-item"><div class="why-dot"></div><div><div class="why-item-title">Doimiy monitoring</div><div class="why-item-text">Dashboardlar va avtomatik hisobotlar orqali biznesingizni real vaqtda kuzatib boramiz.</div></div></div>
+    </div>
+  </div>
+</section>
+
+<section id="process">
+  <div class="process-header reveal">
+    <div class="section-tag">✦ Jarayon</div>
+    <h2 class="section-title">Qanday ishlaymiz</h2>
+    <p class="section-sub">To'rt bosqichli data analitika jarayoni orqali natijaga erishiladi.</p>
+  </div>
+  <div class="process-steps reveal">
+    <div class="process-step"><div class="step-circle">1</div><div class="step-title">Ma'lumot</div><p class="step-desc">Biznesingiz ma'lumotlarini yig'amiz va tozalaymiz — sifatli data, sifatli natija.</p></div>
+    <div class="process-step"><div class="step-circle">2</div><div class="step-title">Tahlil</div><p class="step-desc">AI va statistik metodlar bilan ma'lumotlarni chuqur tahlil qilamiz va trendlarni aniqlaymiz.</p></div>
+    <div class="process-step"><div class="step-circle">3</div><div class="step-title">Vizualizatsiya</div><p class="step-desc">Natijalарni interaktiv dashboard va tushunarli grafiklar ko'rinishida taqdim etamiz.</p></div>
+    <div class="process-step"><div class="step-circle">4</div><div class="step-title">Qaror</div><p class="step-desc">Data asosida aniq tavsiyalar beramiz va qarorlarni amalga oshirishda yordamlashamiz.</p></div>
+  </div>
+</section>
+
+<section id="testimonials">
+  <div class="testimonials-header reveal">
+    <div class="section-tag">✦ Mijozlar fikri</div>
+    <h2 class="section-title">Ular nima deydi</h2>
+    <p class="section-sub">Muvaffaqiyatli mijozlarimizning bir qismi.</p>
+  </div>
+  <div class="testi-grid reveal">
+    <div class="testi-card"><p class="testi-text">Nurislam's Business Advice bilan ishlash bizning kompaniyamizni tamoman o'zgartirdi. Bir yil ichida daromadimiz 3 barobarga oshdi. Juda professional yondashuv!</p><div class="testi-author"><div class="testi-avatar">🧑‍💼</div><div><div class="testi-name">Alisher Karimov</div><div class="testi-role">Restoran egasi, Toshkent</div></div></div></div>
+    <div class="testi-card"><p class="testi-text">Startapimni qanday boshlashni bilmasdim. Nurislam strategiya va biznes-reja tuzishda yordam berdi. Bugun muvaffaqiyatli ishlayapmiz!</p><div class="testi-author"><div class="testi-avatar">👩‍💼</div><div><div class="testi-name">Malika Yusupova</div><div class="testi-role">IT startap asoschisi</div></div></div></div>
+    <div class="testi-card"><p class="testi-text">Marketing strategiyasi butunlay yangilandi. Mijozlar soni ikki barobarga oshdi va brend taniqli bo'ldi. Tavsiya qilaman!</p><div class="testi-author"><div class="testi-avatar">🧔</div><div><div class="testi-name">Jasur Rahimov</div><div class="testi-role">Savdo kompaniyasi direktori</div></div></div></div>
+  </div>
+</section>
+
+<section id="contact">
+  <div class="contact-wrap">
+    <div class="reveal">
+      <div class="section-tag">✦ Bog'lanish</div>
+      <h2 class="section-title">Birinchi<br>qadamni<br>bugun qo'ying</h2>
+      <p class="section-sub" style="margin-bottom:3rem">To'g'ridan to'g'ri bog'laning yoki AI maslahatchi orqali savol bering.</p>
+      <div class="contact-detail">
+        <div class="contact-icon">📱</div>
+        <div>
+          <div class="contact-detail-label">Telegram</div>
+          <div class="contact-detail-val"><a href="https://t.me/nurislomai" target="_blank">@nurislomai → t.me/nurislomai</a></div>
+        </div>
+      </div>
+      <div class="contact-detail">
+        <div class="contact-icon">📞</div>
+        <div>
+          <div class="contact-detail-label">Telefon</div>
+          <div class="contact-detail-val"><a href="tel:+998941670476">+998 94 167 04 76</a></div>
+        </div>
+      </div>
+      <div class="contact-detail">
+        <div class="contact-icon">📍</div>
+        <div>
+          <div class="contact-detail-label">Manzil</div>
+          <div class="contact-detail-val">Toshkent, O'zbekiston</div>
+        </div>
+      </div>
+      <div class="contact-detail">
+        <div class="contact-icon">🕐</div>
+        <div>
+          <div class="contact-detail-label">Ish vaqti</div>
+          <div class="contact-detail-val">Dushanba – Shanba: 9:00 – 18:00</div>
+        </div>
+      </div>
+    </div>
+    <div class="reveal" style="display:flex;flex-direction:column;gap:1rem;justify-content:center">
+      <div style="background:var(--dark3);border:1px solid rgba(201,168,76,0.15);border-radius:4px;padding:2rem;text-align:center">
+        <div style="font-size:2.5rem;margin-bottom:1rem">🤖</div>
+        <div style="font-family:'Playfair Display',serif;font-size:1.2rem;font-weight:700;margin-bottom:.6rem">AI Maslahat — 24/7</div>
+        <p style="font-size:.88rem;color:var(--muted);margin-bottom:1.5rem;line-height:1.6">Biznesingiz haqida savollaringizni darhol javob oling. Har qanday vaqt.</p>
+        <button class="btn-primary" onclick="openAI()" style="width:100%">Suhbatni Boshlash →</button>
+      </div>
+      <a href="https://t.me/nurislomai" target="_blank" style="background:rgba(0,136,204,0.1);border:1px solid rgba(0,136,204,0.25);border-radius:4px;padding:1.2rem 1.5rem;display:flex;align-items:center;gap:1rem;text-decoration:none;transition:border-color .2s" onmouseover="this.style.borderColor='rgba(0,136,204,0.5)'" onmouseout="this.style.borderColor='rgba(0,136,204,0.25)'">
+        <span style="font-size:1.8rem">✈️</span>
+        <div>
+          <div style="font-size:.88rem;font-weight:500;color:var(--cream)">Telegramda yozing</div>
+          <div style="font-size:.78rem;color:var(--muted)">@nurislomai — tez javob</div>
+        </div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-logo">Nurislam's Data Analytics</div>
+  <div class="footer-copy">© 2025 Barcha huquqlar himoyalangan.</div>
+  <div class="footer-links">
+    <a href="#services">Xizmatlar</a>
+    <a href="#why">Haqida</a>
+    <a href="#contact">Aloqa</a>
+  </div>
+</footer>
+
+<script>
+const ADMIN_PASS = '200606';
+let currentUser = null;
+let currentUserEmail = null;
+let users = JSON.parse(localStorage.getItem('nba_users') || '{}');
+
+// ============================================================
+// AUTH — Login / Register (Backend API)
+// ============================================================
+
+function switchAuthTab(tab) {
+  const isLogin = tab === 'login';
+  document.getElementById('tab-login').style.display = isLogin ? 'block' : 'none';
+  document.getElementById('tab-register').style.display = isLogin ? 'none' : 'block';
+  document.getElementById('admin-login-section').style.display = 'none';
+
+  document.getElementById('tab-login-btn').style.background = isLogin ? 'var(--gold)' : 'transparent';
+  document.getElementById('tab-login-btn').style.color = isLogin ? 'var(--dark)' : 'var(--muted)';
+  document.getElementById('tab-reg-btn').style.background = isLogin ? 'transparent' : 'var(--gold)';
+  document.getElementById('tab-reg-btn').style.color = isLogin ? 'var(--muted)' : 'var(--dark)';
+
+  document.getElementById('login-error').textContent = '';
+  document.getElementById('reg-error').textContent = '';
+}
+
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errEl = document.getElementById('login-error');
+  const btn = document.getElementById('login-btn');
+
+  if (!email || !password) { errEl.textContent = 'Email va parolni kiriting'; return; }
+
+  btn.textContent = '⏳ Kirilmoqda...';
+  btn.disabled = true;
+  errEl.textContent = '';
+
+  try {
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      errEl.textContent = data.error || 'Xatolik yuz berdi';
+    } else {
+      onAuthSuccess(data.user.name, data.user.email);
+    }
+  } catch(e) {
+    errEl.textContent = 'Tarmoq xatosi. Internet aloqasini tekshiring.';
+  }
+
+  btn.textContent = 'Kirish →';
+  btn.disabled = false;
+}
+
+async function doRegister() {
+  const name = document.getElementById('reg-name').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const password = document.getElementById('reg-password').value;
+  const errEl = document.getElementById('reg-error');
+  const btn = document.getElementById('reg-btn');
+
+  if (!name || !email || !password) { errEl.textContent = 'Barcha maydonlarni to\'ldiring'; return; }
+
+  btn.textContent = '⏳ Ro\'yxatdan o\'tilmoqda...';
+  btn.disabled = true;
+  errEl.textContent = '';
+
+  try {
+    const res = await fetch('/api/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, password })
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      errEl.textContent = data.error || 'Xatolik yuz berdi';
+    } else {
+      onAuthSuccess(name, email);
+    }
+  } catch(e) {
+    errEl.textContent = 'Tarmoq xatosi. Internet aloqasini tekshiring.';
+  }
+
+  btn.textContent = 'Ro\'yxatdan o\'tish →';
+  btn.disabled = false;
+}
+
+function onAuthSuccess(name, email) {
+  currentUser = name;
+  currentUserEmail = email;
+
+  // LocalStorage ga ham saqla (admin panel uchun)
+  if (!users[name]) {
+    users[name] = { name, email, time: new Date().toLocaleString('uz-UZ'), msgs: [] };
+    saveUsers();
+  }
+
+  document.getElementById('reg-overlay').classList.add('hidden');
+  const badge = document.getElementById('nav-user-name');
+  badge.textContent = '👤 ' + name;
+  badge.style.display = 'inline';
+  document.getElementById('ai-user-label').textContent = 'Salom, ' + name + '!';
+}
+
+// Enter tugmalari
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('login-password')?.addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+  document.getElementById('login-email')?.addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+  document.getElementById('reg-password')?.addEventListener('keydown', e => { if(e.key==='Enter') doRegister(); });
+});
+
+function toggleAdminLogin() {
+  const al = document.getElementById('admin-login-section');
+  const tl = document.getElementById('tab-login');
+  const tr = document.getElementById('tab-register');
+  const show = al.style.display === 'block';
+  al.style.display = show ? 'none' : 'block';
+  tl.style.display = show ? 'block' : 'none';
+  tr.style.display = 'none';
+}
+
+function adminLogin() {
+  if (document.getElementById('admin-pass').value === ADMIN_PASS) {
+    document.getElementById('reg-overlay').classList.add('hidden');
+    showAdminDash();
+  } else {
+    document.getElementById('admin-pass').style.borderColor = 'rgba(255,80,80,0.6)';
+    document.getElementById('admin-pass').value = '';
+    document.getElementById('admin-pass').placeholder = 'Xato parol!';
+  }
+}
+document.getElementById('admin-pass').addEventListener('keydown', e => { if(e.key==='Enter') adminLogin(); });
+
+// ADMIN
+function showAdminDash() {
+  document.getElementById('admin-dash').classList.add('show');
+  renderUserList();
+}
+function exitAdmin() {
+  document.getElementById('admin-dash').classList.remove('show');
+  document.getElementById('reg-overlay').classList.remove('hidden');
+  document.getElementById('admin-login-section').style.display = 'none';
+  document.getElementById('tab-login').style.display = 'block';
+  document.getElementById('tab-register').style.display = 'none';
+  document.getElementById('admin-pass').value = '';
+  document.getElementById('admin-pass').placeholder = 'Parolni kiriting';
+}
+function renderUserList() {
+  const list = document.getElementById('admin-user-list');
+  const u = Object.values(users);
+  if (!u.length) { list.innerHTML = '<div style="padding:1rem 1.5rem;font-size:.82rem;color:var(--muted)">Hali hech kim ro\'yxatdan o\'tmagan</div>'; return; }
+  list.innerHTML = u.map(user => {
+    const ini = user.name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+    return `<div class="user-item" onclick="selectUser('${user.name}', this)">
+      <div class="u-avatar">${ini}</div>
+      <div><div class="u-name">${user.name}</div><div class="u-time">${user.time}</div></div>
+      ${user.msgs.length ? `<div class="u-badge">${user.msgs.length}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+function selectUser(name, el) {
+  document.querySelectorAll('.user-item').forEach(i=>i.classList.remove('active'));
+  el.classList.add('active');
+  const user = users[name];
+  document.getElementById('admin-no-sel').style.display = 'none';
+  const cv = document.getElementById('admin-chat-view');
+  cv.style.display = 'flex';
+  const ini = name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+  document.getElementById('admin-sel-avatar').textContent = ini;
+  document.getElementById('admin-sel-name').textContent = name;
+  document.getElementById('admin-sel-time').textContent = 'Ro\'yxatdan: ' + user.time;
+  const msgs = document.getElementById('admin-chat-msgs');
+  if (!user.msgs.length) { msgs.innerHTML='<div class="admin-empty">Bu foydalanuvchi hali AI bilan suhbat qilmagan.</div>'; return; }
+  msgs.innerHTML = user.msgs.map(m => `
+    <div class="am ${m.role}">
+      <div class="am-meta">${m.role==='user'?name:'AI Maslahatchi'} · ${m.time}</div>
+      <div class="am-bubble">${m.text.replace(/</g,'&lt;')}</div>
+    </div>`).join('');
+  msgs.scrollTop = msgs.scrollHeight;
+}
+function saveUsers() { localStorage.setItem('nba_users', JSON.stringify(users)); }
+
+// AI MODAL
+function openAI() {
+  if (!currentUser) { alert('Iltimos avval ro\'yxatdan o\'ting!'); return; }
+  document.getElementById('ai-modal').classList.add('show');
+  document.getElementById('ai-user-label').textContent = 'Salom, ' + currentUser + '!';
+  // Reset and start quiz
+  currentQuizStep = 0;
+  quizAnswers = {};
+  document.getElementById('result-screen').style.display = 'none';
+  document.getElementById('quiz-screen').style.display = 'flex';
+  document.getElementById('result-content').innerHTML = `<div class="result-loading" id="result-loading"><div class="result-spinner"></div><div class="result-loading-text">AI biznesingizni chuqur tahlil qilmoqda...<br><span style="font-size:.78rem;opacity:.6">Iltimos kuting, 10-20 soniya</span></div></div>`;
+  renderQuizStep();
+}
+function closeAI() { document.getElementById('ai-modal').classList.remove('show'); }
+function switchTab(tab, el) {
+  document.querySelectorAll('.ai-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.ai-panel').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tab-'+tab).classList.add('active');
+}
+
+// CHAT
+let chatHistory = [];
+function handleKey(e) { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();} }
+function autoResize(el) { el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,120)+'px'; }
+
+function addMsg(role, text) {
+  const msgs = document.getElementById('ai-messages');
+  if (!msgs) return;
+  const d = document.createElement('div');
+  d.className = 'ai-msg ' + role;
+  const name = role==='user' ? (currentUser||'Siz') : 'AI Maslahatchi';
+  d.innerHTML = `<div class="ai-msg-name">${name}</div><div class="ai-msg-bubble">${text.replace(/</g,'&lt;').replace(/\n/g,'<br>')}</div>`;
+  msgs.appendChild(d);
+  msgs.scrollTop = msgs.scrollHeight;
+  if (currentUser && users[currentUser]) {
+    const t = new Date().toLocaleTimeString('uz-UZ',{hour:'2-digit',minute:'2-digit'});
+    users[currentUser].msgs.push({role, text, time:t});
+    saveUsers();
+  }
+}
+
+function showTyping() {
+  const msgs = document.getElementById('ai-messages');
+  if (!msgs) return;
+  const d = document.createElement('div');
+  d.className='ai-msg assistant'; d.id='typing-ind';
+  d.innerHTML='<div class="ai-msg-name">AI Maslahatchi</div><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>';
+  msgs.appendChild(d); msgs.scrollTop=msgs.scrollHeight;
+}
+function hideTyping() { const d=document.getElementById('typing-ind'); if(d)d.remove(); }
+
+// ============================================================
+// QUIZ SYSTEM — 10 ta savol, button variantlar, AI tahlil
+// ============================================================
+
+const QUIZ_QUESTIONS = [
+  {
+    id: 'biznes_turi',
+    num: '01',
+    q: "Biznesingiz qaysi sohaga tegishli?",
+    sub: "Eng mos variantni tanlang",
+    type: 'options',
+    options: [
+      { icon: '🛍️', text: 'Savdo (Do\'kon, Onlayn magazin)' },
+      { icon: '🍽️', text: 'Restoran / Oziq-ovqat' },
+      { icon: '💻', text: 'IT / Texnologiya / Dasturlash' },
+      { icon: '📚', text: 'Ta\'lim / Kurslar / Coaching' },
+      { icon: '🏗️', text: 'Qurilish / Ko\'chmas mulk' },
+      { icon: '💄', text: 'Go\'zallik / Saltenat / Tibbiyot' },
+      { icon: '🚚', text: 'Logistika / Yetkazib berish' },
+      { icon: '🔧', text: 'Xizmat ko\'rsatish / Ustaxona' },
+    ]
+  },
+  {
+    id: 'biznes_yoshi',
+    num: '02',
+    q: "Biznesingiz qancha vaqtdan beri ishlaydi?",
+    sub: "Tajriba darajangizni aniqlash uchun",
+    type: 'options',
+    options: [
+      { icon: '🌱', text: 'Hali boshlamagan (Reja bosqichida)' },
+      { icon: '🌿', text: '0–6 oy (Endigina boshlangan)' },
+      { icon: '🌳', text: '6 oy – 2 yil (O\'sish bosqichi)' },
+      { icon: '🏆', text: '2–5 yil (Barqaror biznes)' },
+      { icon: '👑', text: '5+ yil (Katta tajriba)' },
+    ]
+  },
+  {
+    id: 'xodimlar',
+    num: '03',
+    q: "Jamoangizda nechta xodim bor?",
+    sub: "Biznes ko'lami va boshqaruv tuzilmasini aniqlash uchun",
+    type: 'options',
+    options: [
+      { icon: '🧑', text: 'Faqat men (Yakka tadbirkor)' },
+      { icon: '👥', text: '2–5 kishi' },
+      { icon: '👨‍👩‍👧‍👦', text: '6–20 kishi' },
+      { icon: '🏢', text: '21–50 kishi' },
+      { icon: '🏭', text: '50+ kishi' },
+    ]
+  },
+  {
+    id: 'oylik_daromad',
+    num: '04',
+    q: "Taxminiy oylik daromadingiz qancha?",
+    sub: "Ma'lumot faqat tahlil uchun ishlatiladi va maxfiy saqlanadi",
+    type: 'options',
+    options: [
+      { icon: '📉', text: 'Hali daromad yo\'q' },
+      { icon: '💵', text: '1–10 mln so\'m' },
+      { icon: '💰', text: '10–50 mln so\'m' },
+      { icon: '💎', text: '50–200 mln so\'m' },
+      { icon: '🚀', text: '200 mln so\'m dan ortiq' },
+    ]
+  },
+  {
+    id: 'asosiy_muammo',
+    num: '05',
+    q: "Hozir biznesingizning eng katta muammosi nima?",
+    sub: "Bir nechta muammo bo'lsa, eng dolzarbini tanlang",
+    type: 'options',
+    options: [
+      { icon: '📣', text: 'Mijozlarni topish va jalb qilish (Marketing)' },
+      { icon: '💰', text: 'Daromadni oshirish va pul oqimi' },
+      { icon: '👥', text: 'Jamoa boshqaruvi va xodimlar' },
+      { icon: '⚙️', text: 'Jarayonlar tartibsiz, avtomatlashtirish kerak' },
+      { icon: '🏆', text: 'Raqiblar kuchli, farqlanish kerak' },
+      { icon: '📊', text: 'Ma\'lumot yo\'q, qaror qabul qilish qiyin' },
+      { icon: '💳', text: 'Kapital va investitsiya kerak' },
+    ]
+  },
+  {
+    id: 'maqsad',
+    num: '06',
+    q: "Keyingi 6 oyda qanday natijaga erishmoqchisiz?",
+    sub: "Eng muhim maqsadingizni tanlang",
+    type: 'options',
+    options: [
+      { icon: '📈', text: 'Savdoni 2 barobarga oshirish' },
+      { icon: '🌍', text: 'Yangi bozorga yoki shahrga chiqish' },
+      { icon: '🤝', text: 'Doimiy mijozlar bazasini kengaytirish' },
+      { icon: '🔄', text: 'Jarayonlarni avtomatlashtirish' },
+      { icon: '🏗️', text: 'Yangi mahsulot yoki xizmat qo\'shish' },
+      { icon: '👨‍💼', text: 'Jamoani kuchaytirish' },
+    ]
+  },
+  {
+    id: 'marketing_kanal',
+    num: '07',
+    q: "Hozirda mijozlarni qayerdan topasiz?",
+    sub: "Asosiy kanalingizni tanlang",
+    type: 'options',
+    options: [
+      { icon: '📱', text: 'Instagram / TikTok / YouTube' },
+      { icon: '✈️', text: 'Telegram kanali / guruh' },
+      { icon: '👄', text: 'Og\'izdan-og\'izga (Tavsiya)' },
+      { icon: '📞', text: 'Sovuq qo\'ng\'iroq va shaxsiy savdo' },
+      { icon: '🌐', text: 'Sayt / Google orqali' },
+      { icon: '🏪', text: 'Oflayn (Do\'kon, ko\'rgazma, bozor)' },
+      { icon: '❓', text: 'Hali aniq marketing yo\'q' },
+    ]
+  },
+  {
+    id: 'raqobat',
+    num: '08',
+    q: "Bozorda raqobat qanday?",
+    sub: "Sizning sohangizdagi vaziyat",
+    type: 'options',
+    options: [
+      { icon: '🏖️', text: 'Raqobat deyarli yo\'q, men yagona' },
+      { icon: '🌊', text: 'Bir necha raqib bor, bozor katta' },
+      { icon: '⚔️', text: 'Juda katta raqobat, narx urushi bor' },
+      { icon: '🎯', text: 'Tor nisha, raqobat o\'rta darajada' },
+    ]
+  },
+  {
+    id: 'kuchli_tomon',
+    num: '09',
+    q: "Biznesingizning eng kuchli tomoni nima?",
+    sub: "Raqiblardan farqlanadigan xususiyatingiz",
+    type: 'options',
+    options: [
+      { icon: '⭐', text: 'Yuqori sifat va xizmat darajasi' },
+      { icon: '💲', text: 'Arzon narx va yaxshi narx-sifat nisbati' },
+      { icon: '⚡', text: 'Tezlik va ishonchlilik' },
+      { icon: '🎨', text: 'Noyob mahsulot / Kreativ yondashuv' },
+      { icon: '🤝', text: 'Kuchli munosabatlar va mijozlar ishonchi' },
+      { icon: '🔬', text: 'Texnologiya va innovatsiya' },
+    ]
+  },
+  {
+    id: 'qoshimcha',
+    num: '10',
+    q: "Biznesingiz haqida qo'shimcha ma'lumot bering",
+    sub: "AI sizga aniq va shaxsiylashtirilgan maslahat berishi uchun qisqacha yozing",
+    type: 'text',
+    placeholder: "Masalan: Toshkentda 3 ta do\'konim bor, asosan kiyim-kechak sotaman. Oxirgi oyda savdo 30% kamaydi, asosiy muammo yangi mijozlarni topish...",
+  }
+];
+
+let currentQuizStep = 0;
+let quizAnswers = {};
+
+function renderQuizStep() {
+  const q = QUIZ_QUESTIONS[currentQuizStep];
+  const total = QUIZ_QUESTIONS.length;
+  const pct = Math.round(((currentQuizStep + 1) / total) * 100);
+  
+  document.getElementById('quiz-progress').style.width = pct + '%';
+  document.getElementById('quiz-step-label').textContent = `Savol ${currentQuizStep + 1} / ${total}`;
+  
+  const backBtn = document.getElementById('quiz-back');
+  const nextBtn = document.getElementById('quiz-next');
+  backBtn.style.visibility = currentQuizStep === 0 ? 'hidden' : 'visible';
+  
+  const isLast = currentQuizStep === total - 1;
+  nextBtn.textContent = isLast ? '✦ Tahlil qilish' : 'Davom etish →';
+  
+  const existing = quizAnswers[q.id];
+  nextBtn.disabled = !existing;
+  
+  let html = `<div class="quiz-step">
+    <div class="quiz-q-num">✦ Savol ${q.num} / ${QUIZ_QUESTIONS.length}</div>
+    <div class="quiz-q-text">${q.q}</div>
+    <div class="quiz-q-sub">${q.sub}</div>`;
+  
+  if (q.type === 'options') {
+    html += `<div class="quiz-options">`;
+    q.options.forEach((opt, i) => {
+      const sel = existing === opt.text ? 'selected' : '';
+      html += `<button class="quiz-opt ${sel}" onclick="selectOption('${q.id}', this, '${opt.text.replace(/'/g,"\\'")}')">
+        <span class="quiz-opt-icon">${opt.icon}</span>
+        <span class="quiz-opt-text">${opt.text}</span>
+      </button>`;
+    });
+    html += `</div>`;
+  } else {
+    html += `<textarea class="quiz-input-text" id="quiz-text-input" placeholder="${q.placeholder}" rows="4" oninput="onTextInput(this)">${existing||''}</textarea>`;
+  }
+  
+  html += `</div>`;
+  document.getElementById('quiz-content').innerHTML = html;
+  document.getElementById('quiz-content').scrollTop = 0;
+}
+
+function selectOption(qId, el, val) {
+  document.querySelectorAll('.quiz-opt').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  quizAnswers[qId] = val;
+  document.getElementById('quiz-next').disabled = false;
+}
+
+function onTextInput(el) {
+  const q = QUIZ_QUESTIONS[currentQuizStep];
+  quizAnswers[q.id] = el.value.trim();
+  document.getElementById('quiz-next').disabled = !el.value.trim();
+}
+
+function quizBack() {
+  if (currentQuizStep > 0) { currentQuizStep--; renderQuizStep(); }
+}
+
+function quizNext() {
+  const q = QUIZ_QUESTIONS[currentQuizStep];
+  if (q.type === 'text') {
+    const val = document.getElementById('quiz-text-input')?.value?.trim();
+    if (val) quizAnswers[q.id] = val;
+  }
+  if (!quizAnswers[q.id]) return;
+  
+  if (currentQuizStep < QUIZ_QUESTIONS.length - 1) {
+    currentQuizStep++;
+    renderQuizStep();
+  } else {
+    startAnalysis();
+  }
+}
+
+async function startAnalysis() {
+  document.getElementById('quiz-screen').style.display = 'none';
+  document.getElementById('result-screen').style.display = 'flex';
+  
+  const a = quizAnswers;
+  const prompt = `Siz O'zbekistondagi biznes maslahatchi ekspertisiz. Quyidagi ma'lumotlar asosida ushbu foydalanuvchining biznesini chuqur tahlil qilib, aniq va amaliy maslahat bering. Javobingiz o'zbek tilida bo'lsin.
+
+**Biznes ma'lumotlari:**
+- Soha: ${a.biznes_turi || '-'}
+- Biznes yoshi: ${a.biznes_yoshi || '-'}
+- Xodimlar soni: ${a.xodimlar || '-'}
+- Oylik daromad: ${a.oylik_daromad || '-'}
+- Asosiy muammo: ${a.asosiy_muammo || '-'}
+- 6 oylik maqsad: ${a.maqsad || '-'}
+- Asosiy marketing kanali: ${a.marketing_kanal || '-'}
+- Raqobat darajasi: ${a.raqobat || '-'}
+- Kuchli tomoni: ${a.kuchli_tomon || '-'}
+- Qo'shimcha: ${a.qoshimcha || '-'}
+
+Quyidagi tuzilishda batafsil tahlil va maslahat bering:
+
+## 🎯 Biznesingizning Umumiy Bahosi
+(2-3 jumlada umumiy holat haqida)
+
+## ✅ Kuchli Tomonlaringiz
+(3-4 ta aniq kuchli tomon)
+
+## ⚠️ Asosiy Muammoning Chuqur Tahlili
+(Tanlangan asosiy muammo haqida chuqur tahlil, nima sababdan kelib chiqadi, qanday oqibatlarga olib kelishi mumkin)
+
+## 🔑 Eng Muhim Muammoga Aniq Yechim
+(Bu qism ENG MUHIM — aniq, bosqichma-bosqich, amaliy yechim bering. Kamida 5 ta amaliy qadam)
+
+## 📈 6 Oylik O'sish Rejasi
+(Maqsadga erishish uchun oyma-oy reja)
+
+## 💡 3 ta Darhol Bajariladigan Amal
+(Bugun yoki bu hafta qilish mumkin bo'lgan 3 ta amaliy ish)
+
+Maslahat aniq, amaliy va O'zbekiston biznes muhitiga mos bo'lsin.`;
+
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1000,
+        messages: [{ role: "user", content: prompt }]
+      })
+    });
+    const data = await res.json();
+    const text = data.content?.[0]?.text || "Tahlil olishda xatolik yuz berdi.";
+    renderResult(text);
+
+    // Telegram ga yuborish
+    fetch('/api/notify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userName: currentUser,
+        email: currentUserEmail,
+        answers: a,
+        result: text
+      })
+    }).catch(() => {});
+
+    if (currentUser && users[currentUser]) {
+      const t = new Date().toLocaleTimeString('uz-UZ',{hour:'2-digit',minute:'2-digit'});
+      const summary = `[AI Biznes Tahlili] Soha: ${a.biznes_turi}, Muammo: ${a.asosiy_muammo}`;
+      users[currentUser].msgs.push({role:'user', text: summary, time: t});
+      users[currentUser].msgs.push({role:'assistant', text: text, time: t});
+      saveUsers();
+    }
+  } catch(e) {
+    document.getElementById('result-content').innerHTML = `
+      <div style="padding:2rem;text-align:center;color:var(--muted)">
+        <div style="font-size:2rem;margin-bottom:1rem">⚠️</div>
+        <div>Tahlil olishda xatolik yuz berdi. Internetni tekshiring yoki qayta urinib ko'ring.</div>
+        <button class="result-restart-btn" onclick="restartQuiz()" style="margin:1.5rem auto;display:block">← Qayta boshlash</button>
+      </div>`;
+  }
+}
+
+function renderResult(text) {
+  const content = document.getElementById('result-content');
+  
+  // Parse markdown-style headers into HTML sections
+  const sections = text.split(/(?=##\s)/);
+  let html = '';
+  
+  sections.forEach(section => {
+    if (!section.trim()) return;
+    const lines = section.trim().split('\n');
+    const titleLine = lines[0].replace(/^##\s*/, '').trim();
+    const body = lines.slice(1).join('\n').trim();
+    
+    const bodyHtml = body
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/^###\s+(.+)$/gm, '<div style="font-weight:600;color:var(--cream);margin:.6rem 0 .2rem">$1</div>')
+      .replace(/^\-\s+(.+)$/gm, '<li>$1</li>')
+      .replace(/^(\d+)\.\s+(.+)$/gm, '<li><strong style="color:var(--gold)">$1.</strong> $2</li>')
+      .replace(/(<li>.*<\/li>\n?)+/g, match => `<ul style="margin:.4rem 0 .8rem 1rem">${match}</ul>`)
+      .replace(/\n\n/g, '</p><p style="margin:.5rem 0">')
+      .replace(/\n/g, '<br>');
+    
+    html += `<div class="result-card">
+      <div class="result-card-title">${titleLine}</div>
+      <div class="result-card-body"><p style="margin:.5rem 0">${bodyHtml}</p></div>
+    </div>`;
+  });
+  
+  // If no sections found, render as plain
+  if (!html) {
+    html = `<div class="result-card">
+      <div class="result-card-title">✦ AI Tahlil Natijalari</div>
+      <div class="result-card-body">${text.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')}</div>
+    </div>`;
+  }
+  
+  html += `<div style="display:flex;gap:.75rem;flex-wrap:wrap;margin-top:.5rem;align-items:center">
+    <button class="result-restart-btn" onclick="restartQuiz()">↺ Yangi tahlil</button>
+    <button onclick="downloadPDF()" style="display:inline-flex;align-items:center;gap:.5rem;background:rgba(201,168,76,0.12);border:1px solid rgba(201,168,76,0.35);color:var(--gold);padding:.7rem 1.5rem;border-radius:6px;font-size:.85rem;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s" onmouseover="this.style.background='rgba(201,168,76,0.22)'" onmouseout="this.style.background='rgba(201,168,76,0.12)'">📄 PDF yuklab olish</button>
+    <button onclick="downloadImage()" style="display:inline-flex;align-items:center;gap:.5rem;background:rgba(201,168,76,0.12);border:1px solid rgba(201,168,76,0.35);color:var(--gold);padding:.7rem 1.5rem;border-radius:6px;font-size:.85rem;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s" onmouseover="this.style.background='rgba(201,168,76,0.22)'" onmouseout="this.style.background='rgba(201,168,76,0.12)'">🖼️ Rasm yuklab olish</button>
+    <a href="https://t.me/nurislomai" target="_blank" style="display:inline-flex;align-items:center;gap:.5rem;background:rgba(0,136,204,0.15);border:1px solid rgba(0,136,204,0.4);color:#7dcfee;padding:.7rem 1.5rem;border-radius:6px;font-size:.85rem;text-decoration:none;transition:all .2s" onmouseover="this.style.background='rgba(0,136,204,0.25)'" onmouseout="this.style.background='rgba(0,136,204,0.15)'">✈️ Nurislam bilan maslahat</a>
+  </div>`;
+  
+  content.innerHTML = html;
+}
+
+// ============================================================
+// PDF VA RASM YUKLAB OLISH
+// ============================================================
+
+async function captureResultCanvas() {
+  const content = document.getElementById('result-content');
+
+  // Vaqtinchalik oq fon bilan wrapper yaratish
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText = `
+    position:fixed; left:-9999px; top:0;
+    width:800px; padding:40px;
+    background:#141414; color:#F5F0E8;
+    font-family:'DM Sans',sans-serif;
+  `;
+
+  // Header qo'shish
+  const header = document.createElement('div');
+  header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid rgba(201,168,76,0.3)';
+  header.innerHTML = `
+    <div style="font-family:serif;font-size:20px;font-weight:700;color:#C9A84C">Nurislam's Data Analytics</div>
+    <div style="font-size:12px;color:#888">${new Date().toLocaleDateString('uz-UZ')} · AI Biznes Tahlili</div>
+  `;
+  wrapper.appendChild(header);
+
+  // Foydalanuvchi nomi
+  if (currentUser) {
+    const uname = document.createElement('div');
+    uname.style.cssText = 'font-size:13px;color:#888;margin-bottom:20px';
+    uname.textContent = '👤 ' + currentUser;
+    wrapper.appendChild(uname);
+  }
+
+  // Kontent klonlash
+  const clone = content.cloneNode(true);
+  // Tugmalarni yashirish
+  const btnRow = clone.querySelector('div[style*="flex-wrap"]');
+  if (btnRow) btnRow.style.display = 'none';
+  clone.style.cssText = 'overflow:visible;padding:0;';
+  wrapper.appendChild(clone);
+
+  // Footer
+  const footer = document.createElement('div');
+  footer.style.cssText = 'margin-top:24px;padding-top:16px;border-top:1px solid rgba(201,168,76,0.2);font-size:11px;color:#555;text-align:center';
+  footer.textContent = 'nurislam.uz · t.me/nurislomai · +998 94 167 04 76';
+  wrapper.appendChild(footer);
+
+  document.body.appendChild(wrapper);
+
+  const canvas = await html2canvas(wrapper, {
+    scale: 2,
+    useCORS: true,
+    backgroundColor: '#141414',
+    logging: false,
+  });
+
+  document.body.removeChild(wrapper);
+  return canvas;
+}
+
+async function downloadImage() {
+  const btn = event.target;
+  const orig = btn.innerHTML;
+  btn.innerHTML = '⏳ Tayyorlanmoqda...';
+  btn.disabled = true;
+
+  try {
+    const canvas = await captureResultCanvas();
+    const link = document.createElement('a');
+    link.download = `biznes-tahlil-${currentUser || 'natija'}-${Date.now()}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  } catch(e) {
+    alert('Rasm yaratishda xatolik: ' + e.message);
+  }
+
+  btn.innerHTML = orig;
+  btn.disabled = false;
+}
+
+async function downloadPDF() {
+  const btn = event.target;
+  const orig = btn.innerHTML;
+  btn.innerHTML = '⏳ PDF tayyorlanmoqda...';
+  btn.disabled = true;
+
+  try {
+    const canvas = await captureResultCanvas();
+    const { jsPDF } = window.jspdf;
+    const imgData = canvas.toDataURL('image/png');
+
+    const pdfW = 210; // A4 mm
+    const pdfH = (canvas.height * pdfW) / canvas.width;
+
+    const pdf = new jsPDF({
+      orientation: pdfH > pdfW ? 'portrait' : 'landscape',
+      unit: 'mm',
+      format: pdfH <= 297 ? 'a4' : [pdfW, pdfH],
+    });
+
+    pdf.addImage(imgData, 'PNG', 0, 0, pdfW, pdfH);
+    pdf.save(`biznes-tahlil-${currentUser || 'natija'}-${Date.now()}.pdf`);
+  } catch(e) {
+    alert('PDF yaratishda xatolik: ' + e.message);
+  }
+
+  btn.innerHTML = orig;
+  btn.disabled = false;
+}
+
+function restartQuiz() {
+  currentQuizStep = 0;
+  quizAnswers = {};
+  document.getElementById('result-screen').style.display = 'none';
+  document.getElementById('quiz-screen').style.display = 'flex';
+  document.getElementById('result-content').innerHTML = `<div class="result-loading" id="result-loading"><div class="result-spinner"></div><div class="result-loading-text">AI biznesingizni chuqur tahlil qilmoqda...<br><span style="font-size:.78rem;opacity:.6">Iltimos kuting, 10-20 soniya</span></div></div>`;
+  renderQuizStep();
+}
+
+
+
+// ============================================================
+// SCROLL REVEAL
+const reveals = document.querySelectorAll('.reveal');
+new IntersectionObserver(entries=>{
+  entries.forEach((e,i)=>{ if(e.isIntersecting){ setTimeout(()=>e.target.classList.add('visible'),i*80); } });
+},{threshold:0.1}).observe && document.querySelectorAll('.reveal').forEach(r=>
+  new IntersectionObserver(entries=>{
+    entries.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('visible'); } });
+  },{threshold:0.1}).observe(r)
+);
+</script>
+</body>
+</html>

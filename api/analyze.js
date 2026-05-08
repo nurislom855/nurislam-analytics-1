@@ -6,6 +6,7 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
   try {
     const { prompt } = req.body;
+    if (!prompt) return res.status(400).json({ error: 'prompt required' });
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {

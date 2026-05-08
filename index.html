@@ -140,7 +140,6 @@
   .result-restart-btn { background:none; border:1px solid rgba(201,168,76,0.3); color:var(--gold); padding:.7rem 1.5rem; border-radius:6px; cursor:pointer; font-family:'DM Sans',sans-serif; font-size:.85rem; transition:all .2s; align-self:flex-start; margin-top:.5rem; }
   .result-restart-btn:hover { background:rgba(201,168,76,0.1); }
 
-
   .ai-msg.assistant { align-self:flex-start; }
   .ai-msg-bubble { padding:.85rem 1.1rem; border-radius:12px; font-size:.9rem; line-height:1.65; }
   .ai-msg.user .ai-msg-bubble { background:rgba(201,168,76,0.18); border:1px solid rgba(201,168,76,0.25); }
@@ -395,7 +394,6 @@
       <div class="quiz-screen" id="quiz-content"></div>
       <div class="quiz-nav">
         <button class="quiz-back-btn" id="quiz-back" onclick="quizBack()" style="visibility:hidden">← Orqaga</button>
-
         <button class="quiz-next-btn" id="quiz-next" onclick="quizNext()" disabled>Davom etish →</button>
       </div>
     </div>
@@ -507,7 +505,7 @@
   <div class="process-steps reveal">
     <div class="process-step"><div class="step-circle">1</div><div class="step-title">Ma'lumot</div><p class="step-desc">Biznesingiz ma'lumotlarini yig'amiz va tozalaymiz — sifatli data, sifatli natija.</p></div>
     <div class="process-step"><div class="step-circle">2</div><div class="step-title">Tahlil</div><p class="step-desc">AI va statistik metodlar bilan ma'lumotlarni chuqur tahlil qilamiz va trendlarni aniqlaymiz.</p></div>
-    <div class="process-step"><div class="step-circle">3</div><div class="step-title">Vizualizatsiya</div><p class="step-desc">Natijalарni interaktiv dashboard va tushunarli grafiklar ko'rinishida taqdim etamiz.</p></div>
+    <div class="process-step"><div class="step-circle">3</div><div class="step-title">Vizualizatsiya</div><p class="step-desc">Natijalarni interaktiv dashboard va tushunarli grafiklar ko'rinishida taqdim etamiz.</p></div>
     <div class="process-step"><div class="step-circle">4</div><div class="step-title">Qaror</div><p class="step-desc">Data asosida aniq tavsiyalar beramiz va qarorlarni amalga oshirishda yordamlashamiz.</p></div>
   </div>
 </section>
@@ -595,20 +593,17 @@ let currentUserEmail = null;
 let users = JSON.parse(localStorage.getItem('nba_users') || '{}');
 
 // ============================================================
-// AUTH — Login / Register (Backend API)
+// AUTH
 // ============================================================
-
 function switchAuthTab(tab) {
   const isLogin = tab === 'login';
   document.getElementById('tab-login').style.display = isLogin ? 'block' : 'none';
   document.getElementById('tab-register').style.display = isLogin ? 'none' : 'block';
   document.getElementById('admin-login-section').style.display = 'none';
-
   document.getElementById('tab-login-btn').style.background = isLogin ? 'var(--gold)' : 'transparent';
   document.getElementById('tab-login-btn').style.color = isLogin ? 'var(--dark)' : 'var(--muted)';
   document.getElementById('tab-reg-btn').style.background = isLogin ? 'transparent' : 'var(--gold)';
   document.getElementById('tab-reg-btn').style.color = isLogin ? 'var(--muted)' : 'var(--dark)';
-
   document.getElementById('login-error').textContent = '';
   document.getElementById('reg-error').textContent = '';
 }
@@ -618,32 +613,15 @@ async function doLogin() {
   const password = document.getElementById('login-password').value;
   const errEl = document.getElementById('login-error');
   const btn = document.getElementById('login-btn');
-
   if (!email || !password) { errEl.textContent = 'Email va parolni kiriting'; return; }
-
-  btn.textContent = '⏳ Kirilmoqda...';
-  btn.disabled = true;
-  errEl.textContent = '';
-
+  btn.textContent = '⏳ Kirilmoqda...'; btn.disabled = true; errEl.textContent = '';
   try {
-    const res = await fetch('/api/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
-    });
+    const res = await fetch('/api/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email, password }) });
     const data = await res.json();
-
-    if (!res.ok) {
-      errEl.textContent = data.error || 'Xatolik yuz berdi';
-    } else {
-      onAuthSuccess(data.user.name, data.user.email);
-    }
-  } catch(e) {
-    errEl.textContent = 'Tarmoq xatosi. Internet aloqasini tekshiring.';
-  }
-
-  btn.textContent = 'Kirish →';
-  btn.disabled = false;
+    if (!res.ok) { errEl.textContent = data.error || 'Xatolik yuz berdi'; }
+    else { onAuthSuccess(data.user.name, data.user.email); }
+  } catch(e) { errEl.textContent = 'Tarmoq xatosi. Internet aloqasini tekshiring.'; }
+  btn.textContent = 'Kirish →'; btn.disabled = false;
 }
 
 async function doRegister() {
@@ -652,52 +630,26 @@ async function doRegister() {
   const password = document.getElementById('reg-password').value;
   const errEl = document.getElementById('reg-error');
   const btn = document.getElementById('reg-btn');
-
   if (!name || !email || !password) { errEl.textContent = 'Barcha maydonlarni to\'ldiring'; return; }
-
-  btn.textContent = '⏳ Ro\'yxatdan o\'tilmoqda...';
-  btn.disabled = true;
-  errEl.textContent = '';
-
+  btn.textContent = '⏳ Ro\'yxatdan o\'tilmoqda...'; btn.disabled = true; errEl.textContent = '';
   try {
-    const res = await fetch('/api/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, password })
-    });
+    const res = await fetch('/api/register', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name, email, password }) });
     const data = await res.json();
-
-    if (!res.ok) {
-      errEl.textContent = data.error || 'Xatolik yuz berdi';
-    } else {
-      onAuthSuccess(name, email);
-    }
-  } catch(e) {
-    errEl.textContent = 'Tarmoq xatosi. Internet aloqasini tekshiring.';
-  }
-
-  btn.textContent = 'Ro\'yxatdan o\'tish →';
-  btn.disabled = false;
+    if (!res.ok) { errEl.textContent = data.error || 'Xatolik yuz berdi'; }
+    else { onAuthSuccess(name, email); }
+  } catch(e) { errEl.textContent = 'Tarmoq xatosi. Internet aloqasini tekshiring.'; }
+  btn.textContent = 'Ro\'yxatdan o\'tish →'; btn.disabled = false;
 }
 
 function onAuthSuccess(name, email) {
-  currentUser = name;
-  currentUserEmail = email;
-
-  // LocalStorage ga ham saqla (admin panel uchun)
-  if (!users[name]) {
-    users[name] = { name, email, time: new Date().toLocaleString('uz-UZ'), msgs: [] };
-    saveUsers();
-  }
-
+  currentUser = name; currentUserEmail = email;
+  if (!users[name]) { users[name] = { name, email, time: new Date().toLocaleString('uz-UZ'), msgs: [] }; saveUsers(); }
   document.getElementById('reg-overlay').classList.add('hidden');
   const badge = document.getElementById('nav-user-name');
-  badge.textContent = '👤 ' + name;
-  badge.style.display = 'inline';
+  badge.textContent = '👤 ' + name; badge.style.display = 'inline';
   document.getElementById('ai-user-label').textContent = 'Salom, ' + name + '!';
 }
 
-// Enter tugmalari
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('login-password')?.addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
   document.getElementById('login-email')?.addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
@@ -707,11 +659,10 @@ document.addEventListener('DOMContentLoaded', () => {
 function toggleAdminLogin() {
   const al = document.getElementById('admin-login-section');
   const tl = document.getElementById('tab-login');
-  const tr = document.getElementById('tab-register');
   const show = al.style.display === 'block';
   al.style.display = show ? 'none' : 'block';
   tl.style.display = show ? 'block' : 'none';
-  tr.style.display = 'none';
+  document.getElementById('tab-register').style.display = 'none';
 }
 
 function adminLogin() {
@@ -727,9 +678,10 @@ function adminLogin() {
 }
 document.getElementById('admin-pass').addEventListener('keydown', e => { if(e.key==='Enter') adminLogin(); });
 
+// ============================================================
 // ADMIN
+// ============================================================
 let adminUsers = [];
-let selectedAdminUser = null;
 
 function showAdminDash() {
   document.getElementById('admin-dash').classList.add('show');
@@ -750,11 +702,7 @@ async function loadAdminUsers() {
   const list = document.getElementById('admin-user-list');
   list.innerHTML = '<div style="padding:1rem 1.5rem;font-size:.82rem;color:var(--muted)">Yuklanmoqda...</div>';
   try {
-    const res = await fetch('/api/admin', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'getUsers', adminPass: ADMIN_PASS })
-    });
+    const res = await fetch('/api/admin', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ action:'getUsers', adminPass: ADMIN_PASS }) });
     const data = await res.json();
     if (!res.ok) { list.innerHTML = `<div style="padding:1rem;color:#ff6b6b">${data.error}</div>`; return; }
     adminUsers = data.users || [];
@@ -766,10 +714,7 @@ async function loadAdminUsers() {
 
 function renderUserList() {
   const list = document.getElementById('admin-user-list');
-  if (!adminUsers.length) {
-    list.innerHTML = '<div style="padding:1rem 1.5rem;font-size:.82rem;color:var(--muted)">Hali hech kim ro\'yxatdan o\'tmagan</div>';
-    return;
-  }
+  if (!adminUsers.length) { list.innerHTML = '<div style="padding:1rem 1.5rem;font-size:.82rem;color:var(--muted)">Hali hech kim ro\'yxatdan o\'tmagan</div>'; return; }
   list.innerHTML = adminUsers.map((user, i) => {
     const ini = user.name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
     const date = user.createdAt ? new Date(user.createdAt).toLocaleDateString('uz-UZ') : '-';
@@ -788,28 +733,22 @@ function renderUserList() {
 function selectAdminUser(i, el) {
   document.querySelectorAll('.user-item').forEach(x => x.classList.remove('active'));
   el.classList.add('active');
-  selectedAdminUser = adminUsers[i];
-  const user = selectedAdminUser;
-
+  const user = adminUsers[i];
   document.getElementById('admin-no-sel').style.display = 'none';
   const cv = document.getElementById('admin-chat-view');
   cv.style.display = 'flex';
-
   const ini = user.name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
   document.getElementById('admin-sel-avatar').textContent = ini;
   document.getElementById('admin-sel-name').textContent = user.name;
-
   const createdAt = user.createdAt ? new Date(user.createdAt).toLocaleString('uz-UZ') : '-';
   const lastLogin = user.lastLogin ? new Date(user.lastLogin).toLocaleString('uz-UZ') : 'Hali kirmagan';
   document.getElementById('admin-sel-time').textContent = `📧 ${user.email} · Ro'yxat: ${createdAt} · Oxirgi: ${lastLogin}`;
-
-  // Parol tiklash va o'chirish tugmalari
   const msgs = document.getElementById('admin-chat-msgs');
   msgs.innerHTML = `
     <div style="padding:1rem;display:flex;gap:.75rem;flex-wrap:wrap;border-bottom:1px solid rgba(201,168,76,0.1);margin-bottom:1rem">
       <div style="display:flex;gap:.5rem;align-items:center;flex:1">
         <input id="new-pass-input" type="text" placeholder="Yangi parol kiriting"
-          style="flex:1;padding:.5rem .75rem;background:var(--dark3);border:1px solid rgba(201,168,76,0.2);border-radius:4px;color:var(--light);font-family:'DM Sans',sans-serif;font-size:.82rem">
+          style="flex:1;padding:.5rem .75rem;background:var(--dark3);border:1px solid rgba(201,168,76,0.2);border-radius:4px;color:var(--cream);font-family:'DM Sans',sans-serif;font-size:.82rem">
         <button onclick="resetUserPassword('${user.email}')"
           style="padding:.5rem 1rem;background:rgba(201,168,76,0.15);border:1px solid rgba(201,168,76,0.3);color:var(--gold);border-radius:4px;cursor:pointer;font-size:.8rem;white-space:nowrap">
           🔑 Parolni tiklash
@@ -829,260 +768,58 @@ async function resetUserPassword(email) {
   const newPass = document.getElementById('new-pass-input').value.trim();
   const msgEl = document.getElementById('admin-action-msg');
   if (!newPass || newPass.length < 6) { msgEl.style.color='#ff6b6b'; msgEl.textContent = 'Parol kamida 6 ta belgi bo\'lishi kerak'; return; }
-
-  msgEl.style.color = 'var(--gold)';
-  msgEl.textContent = 'Yangilanmoqda...';
-
+  msgEl.style.color = 'var(--gold)'; msgEl.textContent = 'Yangilanmoqda...';
   try {
-    const res = await fetch('/api/admin', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'resetPassword', adminPass: ADMIN_PASS, email, newPassword: newPass })
-    });
+    const res = await fetch('/api/admin', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ action:'resetPassword', adminPass: ADMIN_PASS, email, newPassword: newPass }) });
     const data = await res.json();
-    if (res.ok) {
-      msgEl.style.color = '#4caf50';
-      msgEl.textContent = '✅ Parol muvaffaqiyatli yangilandi!';
-      document.getElementById('new-pass-input').value = '';
-    } else {
-      msgEl.style.color = '#ff6b6b';
-      msgEl.textContent = '❌ ' + data.error;
-    }
-  } catch(e) {
-    msgEl.style.color = '#ff6b6b';
-    msgEl.textContent = '❌ Xatolik: ' + e.message;
-  }
+    if (res.ok) { msgEl.style.color = '#4caf50'; msgEl.textContent = '✅ Parol muvaffaqiyatli yangilandi!'; document.getElementById('new-pass-input').value = ''; }
+    else { msgEl.style.color = '#ff6b6b'; msgEl.textContent = '❌ ' + data.error; }
+  } catch(e) { msgEl.style.color = '#ff6b6b'; msgEl.textContent = '❌ Xatolik: ' + e.message; }
 }
 
 async function deleteUser(email) {
   if (!confirm(`${email} foydalanuvchisini o'chirishni tasdiqlaysizmi?`)) return;
   const msgEl = document.getElementById('admin-action-msg');
-  msgEl.style.color = 'var(--gold)';
-  msgEl.textContent = 'O\'chirilmoqda...';
-
+  msgEl.style.color = 'var(--gold)'; msgEl.textContent = 'O\'chirilmoqda...';
   try {
-    const res = await fetch('/api/admin', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'deleteUser', adminPass: ADMIN_PASS, email })
-    });
+    const res = await fetch('/api/admin', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ action:'deleteUser', adminPass: ADMIN_PASS, email }) });
     const data = await res.json();
-    if (res.ok) {
-      adminUsers = adminUsers.filter(u => u.email !== email);
-      renderUserList();
-      document.getElementById('admin-no-sel').style.display = 'block';
-      document.getElementById('admin-chat-view').style.display = 'none';
-    } else {
-      msgEl.style.color = '#ff6b6b';
-      msgEl.textContent = '❌ ' + data.error;
-    }
-  } catch(e) {
-    msgEl.style.color = '#ff6b6b';
-    msgEl.textContent = '❌ Xatolik: ' + e.message;
-  }
+    if (res.ok) { adminUsers = adminUsers.filter(u => u.email !== email); renderUserList(); document.getElementById('admin-no-sel').style.display = 'block'; document.getElementById('admin-chat-view').style.display = 'none'; }
+    else { msgEl.style.color = '#ff6b6b'; msgEl.textContent = '❌ ' + data.error; }
+  } catch(e) { msgEl.style.color = '#ff6b6b'; msgEl.textContent = '❌ Xatolik: ' + e.message; }
 }
 
 function saveUsers() { localStorage.setItem('nba_users', JSON.stringify(users)); }
 
+// ============================================================
 // AI MODAL
+// ============================================================
 function openAI() {
   if (!currentUser) { alert('Iltimos avval ro\'yxatdan o\'ting!'); return; }
   document.getElementById('ai-modal').classList.add('show');
   document.getElementById('ai-user-label').textContent = 'Salom, ' + currentUser + '!';
-  // Reset and start quiz
-  currentQuizStep = 0;
-  quizAnswers = {};
+  currentQuizStep = 0; quizAnswers = {};
   document.getElementById('result-screen').style.display = 'none';
   document.getElementById('quiz-screen').style.display = 'flex';
   document.getElementById('result-content').innerHTML = `<div class="result-loading" id="result-loading"><div class="result-spinner"></div><div class="result-loading-text">AI biznesingizni chuqur tahlil qilmoqda...<br><span style="font-size:.78rem;opacity:.6">Iltimos kuting, 10-20 soniya</span></div></div>`;
   renderQuizStep();
 }
 function closeAI() { document.getElementById('ai-modal').classList.remove('show'); }
-function switchTab(tab, el) {
-  document.querySelectorAll('.ai-tab').forEach(t=>t.classList.remove('active'));
-  document.querySelectorAll('.ai-panel').forEach(p=>p.classList.remove('active'));
-  el.classList.add('active');
-  document.getElementById('tab-'+tab).classList.add('active');
-}
-
-// CHAT
-let chatHistory = [];
-function handleKey(e) { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();} }
-function autoResize(el) { el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,120)+'px'; }
-
-function addMsg(role, text) {
-  const msgs = document.getElementById('ai-messages');
-  if (!msgs) return;
-  const d = document.createElement('div');
-  d.className = 'ai-msg ' + role;
-  const name = role==='user' ? (currentUser||'Siz') : 'AI Maslahatchi';
-  d.innerHTML = `<div class="ai-msg-name">${name}</div><div class="ai-msg-bubble">${text.replace(/</g,'&lt;').replace(/\n/g,'<br>')}</div>`;
-  msgs.appendChild(d);
-  msgs.scrollTop = msgs.scrollHeight;
-  if (currentUser && users[currentUser]) {
-    const t = new Date().toLocaleTimeString('uz-UZ',{hour:'2-digit',minute:'2-digit'});
-    users[currentUser].msgs.push({role, text, time:t});
-    saveUsers();
-  }
-}
-
-function showTyping() {
-  const msgs = document.getElementById('ai-messages');
-  if (!msgs) return;
-  const d = document.createElement('div');
-  d.className='ai-msg assistant'; d.id='typing-ind';
-  d.innerHTML='<div class="ai-msg-name">AI Maslahatchi</div><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>';
-  msgs.appendChild(d); msgs.scrollTop=msgs.scrollHeight;
-}
-function hideTyping() { const d=document.getElementById('typing-ind'); if(d)d.remove(); }
 
 // ============================================================
-// QUIZ SYSTEM — 10 ta savol, button variantlar, AI tahlil
+// QUIZ
 // ============================================================
-
 const QUIZ_QUESTIONS = [
-  {
-    id: 'biznes_turi',
-    num: '01',
-    q: "Biznesingiz qaysi sohaga tegishli?",
-    sub: "Eng mos variantni tanlang",
-    type: 'options',
-    options: [
-      { icon: '🛍️', text: 'Savdo (Do\'kon, Onlayn magazin)' },
-      { icon: '🍽️', text: 'Restoran / Oziq-ovqat' },
-      { icon: '💻', text: 'IT / Texnologiya / Dasturlash' },
-      { icon: '📚', text: 'Ta\'lim / Kurslar / Coaching' },
-      { icon: '🏗️', text: 'Qurilish / Ko\'chmas mulk' },
-      { icon: '💄', text: 'Go\'zallik / Saltenat / Tibbiyot' },
-      { icon: '🚚', text: 'Logistika / Yetkazib berish' },
-      { icon: '🔧', text: 'Xizmat ko\'rsatish / Ustaxona' },
-    ]
-  },
-  {
-    id: 'biznes_yoshi',
-    num: '02',
-    q: "Biznesingiz qancha vaqtdan beri ishlaydi?",
-    sub: "Tajriba darajangizni aniqlash uchun",
-    type: 'options',
-    options: [
-      { icon: '🌱', text: 'Hali boshlamagan (Reja bosqichida)' },
-      { icon: '🌿', text: '0–6 oy (Endigina boshlangan)' },
-      { icon: '🌳', text: '6 oy – 2 yil (O\'sish bosqichi)' },
-      { icon: '🏆', text: '2–5 yil (Barqaror biznes)' },
-      { icon: '👑', text: '5+ yil (Katta tajriba)' },
-    ]
-  },
-  {
-    id: 'xodimlar',
-    num: '03',
-    q: "Jamoangizda nechta xodim bor?",
-    sub: "Biznes ko'lami va boshqaruv tuzilmasini aniqlash uchun",
-    type: 'options',
-    options: [
-      { icon: '🧑', text: 'Faqat men (Yakka tadbirkor)' },
-      { icon: '👥', text: '2–5 kishi' },
-      { icon: '👨‍👩‍👧‍👦', text: '6–20 kishi' },
-      { icon: '🏢', text: '21–50 kishi' },
-      { icon: '🏭', text: '50+ kishi' },
-    ]
-  },
-  {
-    id: 'oylik_daromad',
-    num: '04',
-    q: "Taxminiy oylik daromadingiz qancha?",
-    sub: "Ma'lumot faqat tahlil uchun ishlatiladi va maxfiy saqlanadi",
-    type: 'options',
-    options: [
-      { icon: '📉', text: 'Hali daromad yo\'q' },
-      { icon: '💵', text: '1–10 mln so\'m' },
-      { icon: '💰', text: '10–50 mln so\'m' },
-      { icon: '💎', text: '50–200 mln so\'m' },
-      { icon: '🚀', text: '200 mln so\'m dan ortiq' },
-    ]
-  },
-  {
-    id: 'asosiy_muammo',
-    num: '05',
-    q: "Hozir biznesingizning eng katta muammosi nima?",
-    sub: "Bir nechta muammo bo'lsa, eng dolzarbini tanlang",
-    type: 'options',
-    options: [
-      { icon: '📣', text: 'Mijozlarni topish va jalb qilish (Marketing)' },
-      { icon: '💰', text: 'Daromadni oshirish va pul oqimi' },
-      { icon: '👥', text: 'Jamoa boshqaruvi va xodimlar' },
-      { icon: '⚙️', text: 'Jarayonlar tartibsiz, avtomatlashtirish kerak' },
-      { icon: '🏆', text: 'Raqiblar kuchli, farqlanish kerak' },
-      { icon: '📊', text: 'Ma\'lumot yo\'q, qaror qabul qilish qiyin' },
-      { icon: '💳', text: 'Kapital va investitsiya kerak' },
-    ]
-  },
-  {
-    id: 'maqsad',
-    num: '06',
-    q: "Keyingi 6 oyda qanday natijaga erishmoqchisiz?",
-    sub: "Eng muhim maqsadingizni tanlang",
-    type: 'options',
-    options: [
-      { icon: '📈', text: 'Savdoni 2 barobarga oshirish' },
-      { icon: '🌍', text: 'Yangi bozorga yoki shahrga chiqish' },
-      { icon: '🤝', text: 'Doimiy mijozlar bazasini kengaytirish' },
-      { icon: '🔄', text: 'Jarayonlarni avtomatlashtirish' },
-      { icon: '🏗️', text: 'Yangi mahsulot yoki xizmat qo\'shish' },
-      { icon: '👨‍💼', text: 'Jamoani kuchaytirish' },
-    ]
-  },
-  {
-    id: 'marketing_kanal',
-    num: '07',
-    q: "Hozirda mijozlarni qayerdan topasiz?",
-    sub: "Asosiy kanalingizni tanlang",
-    type: 'options',
-    options: [
-      { icon: '📱', text: 'Instagram / TikTok / YouTube' },
-      { icon: '✈️', text: 'Telegram kanali / guruh' },
-      { icon: '👄', text: 'Og\'izdan-og\'izga (Tavsiya)' },
-      { icon: '📞', text: 'Sovuq qo\'ng\'iroq va shaxsiy savdo' },
-      { icon: '🌐', text: 'Sayt / Google orqali' },
-      { icon: '🏪', text: 'Oflayn (Do\'kon, ko\'rgazma, bozor)' },
-      { icon: '❓', text: 'Hali aniq marketing yo\'q' },
-    ]
-  },
-  {
-    id: 'raqobat',
-    num: '08',
-    q: "Bozorda raqobat qanday?",
-    sub: "Sizning sohangizdagi vaziyat",
-    type: 'options',
-    options: [
-      { icon: '🏖️', text: 'Raqobat deyarli yo\'q, men yagona' },
-      { icon: '🌊', text: 'Bir necha raqib bor, bozor katta' },
-      { icon: '⚔️', text: 'Juda katta raqobat, narx urushi bor' },
-      { icon: '🎯', text: 'Tor nisha, raqobat o\'rta darajada' },
-    ]
-  },
-  {
-    id: 'kuchli_tomon',
-    num: '09',
-    q: "Biznesingizning eng kuchli tomoni nima?",
-    sub: "Raqiblardan farqlanadigan xususiyatingiz",
-    type: 'options',
-    options: [
-      { icon: '⭐', text: 'Yuqori sifat va xizmat darajasi' },
-      { icon: '💲', text: 'Arzon narx va yaxshi narx-sifat nisbati' },
-      { icon: '⚡', text: 'Tezlik va ishonchlilik' },
-      { icon: '🎨', text: 'Noyob mahsulot / Kreativ yondashuv' },
-      { icon: '🤝', text: 'Kuchli munosabatlar va mijozlar ishonchi' },
-      { icon: '🔬', text: 'Texnologiya va innovatsiya' },
-    ]
-  },
-  {
-    id: 'qoshimcha',
-    num: '10',
-    q: "Biznesingiz haqida qo'shimcha ma'lumot bering",
-    sub: "AI sizga aniq va shaxsiylashtirilgan maslahat berishi uchun qisqacha yozing",
-    type: 'text',
-    placeholder: "Masalan: Toshkentda 3 ta do\'konim bor, asosan kiyim-kechak sotaman. Oxirgi oyda savdo 30% kamaydi, asosiy muammo yangi mijozlarni topish...",
-  }
+  { id:'biznes_turi', num:'01', q:"Biznesingiz qaysi sohaga tegishli?", sub:"Eng mos variantni tanlang", type:'options', options:[{icon:'🛍️',text:'Savdo (Do\'kon, Onlayn magazin)'},{icon:'🍽️',text:'Restoran / Oziq-ovqat'},{icon:'💻',text:'IT / Texnologiya / Dasturlash'},{icon:'📚',text:'Ta\'lim / Kurslar / Coaching'},{icon:'🏗️',text:'Qurilish / Ko\'chmas mulk'},{icon:'💄',text:'Go\'zallik / Saltenat / Tibbiyot'},{icon:'🚚',text:'Logistika / Yetkazib berish'},{icon:'🔧',text:'Xizmat ko\'rsatish / Ustaxona'}] },
+  { id:'biznes_yoshi', num:'02', q:"Biznesingiz qancha vaqtdan beri ishlaydi?", sub:"Tajriba darajangizni aniqlash uchun", type:'options', options:[{icon:'🌱',text:'Hali boshlamagan (Reja bosqichida)'},{icon:'🌿',text:'0–6 oy (Endigina boshlangan)'},{icon:'🌳',text:'6 oy – 2 yil (O\'sish bosqichi)'},{icon:'🏆',text:'2–5 yil (Barqaror biznes)'},{icon:'👑',text:'5+ yil (Katta tajriba)'}] },
+  { id:'xodimlar', num:'03', q:"Jamoangizda nechta xodim bor?", sub:"Biznes ko'lami va boshqaruv tuzilmasini aniqlash uchun", type:'options', options:[{icon:'🧑',text:'Faqat men (Yakka tadbirkor)'},{icon:'👥',text:'2–5 kishi'},{icon:'👨‍👩‍👧‍👦',text:'6–20 kishi'},{icon:'🏢',text:'21–50 kishi'},{icon:'🏭',text:'50+ kishi'}] },
+  { id:'oylik_daromad', num:'04', q:"Taxminiy oylik daromadingiz qancha?", sub:"Ma'lumot faqat tahlil uchun ishlatiladi va maxfiy saqlanadi", type:'options', options:[{icon:'📉',text:'Hali daromad yo\'q'},{icon:'💵',text:'1–10 mln so\'m'},{icon:'💰',text:'10–50 mln so\'m'},{icon:'💎',text:'50–200 mln so\'m'},{icon:'🚀',text:'200 mln so\'m dan ortiq'}] },
+  { id:'asosiy_muammo', num:'05', q:"Hozir biznesingizning eng katta muammosi nima?", sub:"Bir nechta muammo bo'lsa, eng dolzarbini tanlang", type:'options', options:[{icon:'📣',text:'Mijozlarni topish va jalb qilish (Marketing)'},{icon:'💰',text:'Daromadni oshirish va pul oqimi'},{icon:'👥',text:'Jamoa boshqaruvi va xodimlar'},{icon:'⚙️',text:'Jarayonlar tartibsiz, avtomatlashtirish kerak'},{icon:'🏆',text:'Raqiblar kuchli, farqlanish kerak'},{icon:'📊',text:'Ma\'lumot yo\'q, qaror qabul qilish qiyin'},{icon:'💳',text:'Kapital va investitsiya kerak'}] },
+  { id:'maqsad', num:'06', q:"Keyingi 6 oyda qanday natijaga erishmoqchisiz?", sub:"Eng muhim maqsadingizni tanlang", type:'options', options:[{icon:'📈',text:'Savdoni 2 barobarga oshirish'},{icon:'🌍',text:'Yangi bozorga yoki shahrga chiqish'},{icon:'🤝',text:'Doimiy mijozlar bazasini kengaytirish'},{icon:'🔄',text:'Jarayonlarni avtomatlashtirish'},{icon:'🏗️',text:'Yangi mahsulot yoki xizmat qo\'shish'},{icon:'👨‍💼',text:'Jamoani kuchaytirish'}] },
+  { id:'marketing_kanal', num:'07', q:"Hozirda mijozlarni qayerdan topasiz?", sub:"Asosiy kanalingizni tanlang", type:'options', options:[{icon:'📱',text:'Instagram / TikTok / YouTube'},{icon:'✈️',text:'Telegram kanali / guruh'},{icon:'👄',text:'Og\'izdan-og\'izga (Tavsiya)'},{icon:'📞',text:'Sovuq qo\'ng\'iroq va shaxsiy savdo'},{icon:'🌐',text:'Sayt / Google orqali'},{icon:'🏪',text:'Oflayn (Do\'kon, ko\'rgazma, bozor)'},{icon:'❓',text:'Hali aniq marketing yo\'q'}] },
+  { id:'raqobat', num:'08', q:"Bozorda raqobat qanday?", sub:"Sizning sohangizdagi vaziyat", type:'options', options:[{icon:'🏖️',text:'Raqobat deyarli yo\'q, men yagona'},{icon:'🌊',text:'Bir necha raqib bor, bozor katta'},{icon:'⚔️',text:'Juda katta raqobat, narx urushi bor'},{icon:'🎯',text:'Tor nisha, raqobat o\'rta darajada'}] },
+  { id:'kuchli_tomon', num:'09', q:"Biznesingizning eng kuchli tomoni nima?", sub:"Raqiblardan farqlanadigan xususiyatingiz", type:'options', options:[{icon:'⭐',text:'Yuqori sifat va xizmat darajasi'},{icon:'💲',text:'Arzon narx va yaxshi narx-sifat nisbati'},{icon:'⚡',text:'Tezlik va ishonchlilik'},{icon:'🎨',text:'Noyob mahsulot / Kreativ yondashuv'},{icon:'🤝',text:'Kuchli munosabatlar va mijozlar ishonchi'},{icon:'🔬',text:'Texnologiya va innovatsiya'}] },
+  { id:'qoshimcha', num:'10', q:"Biznesingiz haqida qo'shimcha ma'lumot bering", sub:"AI sizga aniq va shaxsiylashtirilgan maslahat berishi uchun qisqacha yozing", type:'text', placeholder:"Masalan: Toshkentda 3 ta do'konim bor, asosan kiyim-kechak sotaman. Oxirgi oyda savdo 30% kamaydi..." }
 ];
 
 let currentQuizStep = 0;
@@ -1092,28 +829,22 @@ function renderQuizStep() {
   const q = QUIZ_QUESTIONS[currentQuizStep];
   const total = QUIZ_QUESTIONS.length;
   const pct = Math.round(((currentQuizStep + 1) / total) * 100);
-  
   document.getElementById('quiz-progress').style.width = pct + '%';
   document.getElementById('quiz-step-label').textContent = `Savol ${currentQuizStep + 1} / ${total}`;
-  
   const backBtn = document.getElementById('quiz-back');
   const nextBtn = document.getElementById('quiz-next');
   backBtn.style.visibility = currentQuizStep === 0 ? 'hidden' : 'visible';
-  
   const isLast = currentQuizStep === total - 1;
   nextBtn.textContent = isLast ? '✦ Tahlil qilish' : 'Davom etish →';
-  
   const existing = quizAnswers[q.id];
   nextBtn.disabled = !existing;
-  
   let html = `<div class="quiz-step">
     <div class="quiz-q-num">✦ Savol ${q.num} / ${QUIZ_QUESTIONS.length}</div>
     <div class="quiz-q-text">${q.q}</div>
     <div class="quiz-q-sub">${q.sub}</div>`;
-  
   if (q.type === 'options') {
     html += `<div class="quiz-options">`;
-    q.options.forEach((opt, i) => {
+    q.options.forEach(opt => {
       const sel = existing === opt.text ? 'selected' : '';
       html += `<button class="quiz-opt ${sel}" onclick="selectOption('${q.id}', this, '${opt.text.replace(/'/g,"\\'")}')">
         <span class="quiz-opt-icon">${opt.icon}</span>
@@ -1124,7 +855,6 @@ function renderQuizStep() {
   } else {
     html += `<textarea class="quiz-input-text" id="quiz-text-input" placeholder="${q.placeholder}" rows="4" oninput="onTextInput(this)">${existing||''}</textarea>`;
   }
-  
   html += `</div>`;
   document.getElementById('quiz-content').innerHTML = html;
   document.getElementById('quiz-content').scrollTop = 0;
@@ -1143,30 +873,23 @@ function onTextInput(el) {
   document.getElementById('quiz-next').disabled = !el.value.trim();
 }
 
-function quizBack() {
-  if (currentQuizStep > 0) { currentQuizStep--; renderQuizStep(); }
-}
+function quizBack() { if (currentQuizStep > 0) { currentQuizStep--; renderQuizStep(); } }
 
 function quizNext() {
   const q = QUIZ_QUESTIONS[currentQuizStep];
-  if (q.type === 'text') {
-    const val = document.getElementById('quiz-text-input')?.value?.trim();
-    if (val) quizAnswers[q.id] = val;
-  }
+  if (q.type === 'text') { const val = document.getElementById('quiz-text-input')?.value?.trim(); if (val) quizAnswers[q.id] = val; }
   if (!quizAnswers[q.id]) return;
-  
-  if (currentQuizStep < QUIZ_QUESTIONS.length - 1) {
-    currentQuizStep++;
-    renderQuizStep();
-  } else {
-    startAnalysis();
-  }
+  if (currentQuizStep < QUIZ_QUESTIONS.length - 1) { currentQuizStep++; renderQuizStep(); }
+  else { startAnalysis(); }
 }
 
+// ============================================================
+// AI TAHLIL — /api/analyze orqali (xavfsiz)
+// ============================================================
 async function startAnalysis() {
   document.getElementById('quiz-screen').style.display = 'none';
   document.getElementById('result-screen').style.display = 'flex';
-  
+
   const a = quizAnswers;
   const prompt = `Siz O'zbekistondagi biznes maslahatchi ekspertisiz. Quyidagi ma'lumotlar asosida ushbu foydalanuvchining biznesini chuqur tahlil qilib, aniq va amaliy maslahat bering. Javobingiz o'zbek tilida bo'lsin.
 
@@ -1191,10 +914,10 @@ Quyidagi tuzilishda batafsil tahlil va maslahat bering:
 (3-4 ta aniq kuchli tomon)
 
 ## ⚠️ Asosiy Muammoning Chuqur Tahlili
-(Tanlangan asosiy muammo haqida chuqur tahlil, nima sababdan kelib chiqadi, qanday oqibatlarga olib kelishi mumkin)
+(Tanlangan asosiy muammo haqida chuqur tahlil)
 
 ## 🔑 Eng Muhim Muammoga Aniq Yechim
-(Bu qism ENG MUHIM — aniq, bosqichma-bosqich, amaliy yechim bering. Kamida 5 ta amaliy qadam)
+(Kamida 5 ta amaliy qadam)
 
 ## 📈 6 Oylik O'sish Rejasi
 (Maqsadga erishish uchun oyma-oy reja)
@@ -1205,41 +928,28 @@ Quyidagi tuzilishda batafsil tahlil va maslahat bering:
 Maslahat aniq, amaliy va O'zbekiston biznes muhitiga mos bo'lsin.`;
 
   try {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": "sk-ant-api03-tCFnBiISIHJxfKhEJI5Kc8SLW0Ry6LtHNRAlqMnkdgjWaXBXiR7nMh4uWb8Pd6aQDEJBp1JuL1hkMD3MH9_dQ-JYXO7gAA",
-        "anthropic-version": "2023-06-01",
-        "anthropic-dangerous-direct-browser-access": "true"
-      },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 1500,
-        messages: [{ role: "user", content: prompt }]
-      })
+    // ✅ TO'G'RI YO'L: /api/analyze serverless funksiyasi orqali
+    const res = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt })
     });
+
     const data = await res.json();
-    const text = data.content?.[0]?.text || "Tahlil olishda xatolik yuz berdi.";
+    const text = data.content?.[0]?.text || data.error || 'Tahlil olishda xatolik yuz berdi.';
     renderResult(text);
 
-    // Telegram ga yuborish
+    // Telegram bildirishnoma
     fetch('/api/notify', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        userName: currentUser,
-        email: currentUserEmail,
-        answers: a,
-        result: text
-      })
+      body: JSON.stringify({ userName: currentUser, email: currentUserEmail, answers: a, result: text })
     }).catch(() => {});
 
     if (currentUser && users[currentUser]) {
       const t = new Date().toLocaleTimeString('uz-UZ',{hour:'2-digit',minute:'2-digit'});
-      const summary = `[AI Biznes Tahlili] Soha: ${a.biznes_turi}, Muammo: ${a.asosiy_muammo}`;
-      users[currentUser].msgs.push({role:'user', text: summary, time: t});
-      users[currentUser].msgs.push({role:'assistant', text: text, time: t});
+      users[currentUser].msgs.push({role:'user', text:`[AI Tahlili] Soha: ${a.biznes_turi}`, time:t});
+      users[currentUser].msgs.push({role:'assistant', text, time:t});
       saveUsers();
     }
   } catch(e) {
@@ -1254,17 +964,13 @@ Maslahat aniq, amaliy va O'zbekiston biznes muhitiga mos bo'lsin.`;
 
 function renderResult(text) {
   const content = document.getElementById('result-content');
-  
-  // Parse markdown-style headers into HTML sections
   const sections = text.split(/(?=##\s)/);
   let html = '';
-  
   sections.forEach(section => {
     if (!section.trim()) return;
     const lines = section.trim().split('\n');
     const titleLine = lines[0].replace(/^##\s*/, '').trim();
     const body = lines.slice(1).join('\n').trim();
-    
     const bodyHtml = body
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
       .replace(/^###\s+(.+)$/gm, '<div style="font-weight:600;color:var(--cream);margin:.6rem 0 .2rem">$1</div>')
@@ -1273,161 +979,97 @@ function renderResult(text) {
       .replace(/(<li>.*<\/li>\n?)+/g, match => `<ul style="margin:.4rem 0 .8rem 1rem">${match}</ul>`)
       .replace(/\n\n/g, '</p><p style="margin:.5rem 0">')
       .replace(/\n/g, '<br>');
-    
     html += `<div class="result-card">
       <div class="result-card-title">${titleLine}</div>
       <div class="result-card-body"><p style="margin:.5rem 0">${bodyHtml}</p></div>
     </div>`;
   });
-  
-  // If no sections found, render as plain
   if (!html) {
     html = `<div class="result-card">
       <div class="result-card-title">✦ AI Tahlil Natijalari</div>
       <div class="result-card-body">${text.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')}</div>
     </div>`;
   }
-  
   html += `<div style="display:flex;gap:.75rem;flex-wrap:wrap;margin-top:.5rem;align-items:center">
     <button class="result-restart-btn" onclick="restartQuiz()">↺ Yangi tahlil</button>
     <button onclick="downloadPDF()" style="display:inline-flex;align-items:center;gap:.5rem;background:rgba(201,168,76,0.12);border:1px solid rgba(201,168,76,0.35);color:var(--gold);padding:.7rem 1.5rem;border-radius:6px;font-size:.85rem;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s" onmouseover="this.style.background='rgba(201,168,76,0.22)'" onmouseout="this.style.background='rgba(201,168,76,0.12)'">📄 PDF yuklab olish</button>
     <button onclick="downloadImage()" style="display:inline-flex;align-items:center;gap:.5rem;background:rgba(201,168,76,0.12);border:1px solid rgba(201,168,76,0.35);color:var(--gold);padding:.7rem 1.5rem;border-radius:6px;font-size:.85rem;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s" onmouseover="this.style.background='rgba(201,168,76,0.22)'" onmouseout="this.style.background='rgba(201,168,76,0.12)'">🖼️ Rasm yuklab olish</button>
-    <a href="https://t.me/nurislomai" target="_blank" style="display:inline-flex;align-items:center;gap:.5rem;background:rgba(0,136,204,0.15);border:1px solid rgba(0,136,204,0.4);color:#7dcfee;padding:.7rem 1.5rem;border-radius:6px;font-size:.85rem;text-decoration:none;transition:all .2s" onmouseover="this.style.background='rgba(0,136,204,0.25)'" onmouseout="this.style.background='rgba(0,136,204,0.15)'">✈️ Nurislam bilan maslahat</a>
+    <a href="https://t.me/nurislomai" target="_blank" style="display:inline-flex;align-items:center;gap:.5rem;background:rgba(0,136,204,0.15);border:1px solid rgba(0,136,204,0.4);color:#7dcfee;padding:.7rem 1.5rem;border-radius:6px;font-size:.85rem;text-decoration:none">✈️ Nurislam bilan maslahat</a>
   </div>`;
-  
   content.innerHTML = html;
 }
 
 // ============================================================
-// PDF VA RASM YUKLAB OLISH
+// PDF / RASM YUKLAB OLISH
 // ============================================================
-
 async function captureResultCanvas() {
   const content = document.getElementById('result-content');
-
-  // Vaqtinchalik oq fon bilan wrapper yaratish
   const wrapper = document.createElement('div');
-  wrapper.style.cssText = `
-    position:fixed; left:-9999px; top:0;
-    width:800px; padding:40px;
-    background:#141414; color:#F5F0E8;
-    font-family:'DM Sans',sans-serif;
-  `;
-
-  // Header qo'shish
+  wrapper.style.cssText = 'position:fixed;left:-9999px;top:0;width:800px;padding:40px;background:#141414;color:#F5F0E8;font-family:DM Sans,sans-serif;';
   const header = document.createElement('div');
   header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid rgba(201,168,76,0.3)';
-  header.innerHTML = `
-    <div style="font-family:serif;font-size:20px;font-weight:700;color:#C9A84C">Nurislam's Data Analytics</div>
-    <div style="font-size:12px;color:#888">${new Date().toLocaleDateString('uz-UZ')} · AI Biznes Tahlili</div>
-  `;
+  header.innerHTML = `<div style="font-family:serif;font-size:20px;font-weight:700;color:#C9A84C">Nurislam's Data Analytics</div><div style="font-size:12px;color:#888">${new Date().toLocaleDateString('uz-UZ')} · AI Biznes Tahlili</div>`;
   wrapper.appendChild(header);
-
-  // Foydalanuvchi nomi
-  if (currentUser) {
-    const uname = document.createElement('div');
-    uname.style.cssText = 'font-size:13px;color:#888;margin-bottom:20px';
-    uname.textContent = '👤 ' + currentUser;
-    wrapper.appendChild(uname);
-  }
-
-  // Kontent klonlash
+  if (currentUser) { const uname = document.createElement('div'); uname.style.cssText = 'font-size:13px;color:#888;margin-bottom:20px'; uname.textContent = '👤 ' + currentUser; wrapper.appendChild(uname); }
   const clone = content.cloneNode(true);
-  // Tugmalarni yashirish
   const btnRow = clone.querySelector('div[style*="flex-wrap"]');
   if (btnRow) btnRow.style.display = 'none';
   clone.style.cssText = 'overflow:visible;padding:0;';
   wrapper.appendChild(clone);
-
-  // Footer
   const footer = document.createElement('div');
   footer.style.cssText = 'margin-top:24px;padding-top:16px;border-top:1px solid rgba(201,168,76,0.2);font-size:11px;color:#555;text-align:center';
   footer.textContent = 'nurislam.uz · t.me/nurislomai · +998 94 167 04 76';
   wrapper.appendChild(footer);
-
   document.body.appendChild(wrapper);
-
-  const canvas = await html2canvas(wrapper, {
-    scale: 2,
-    useCORS: true,
-    backgroundColor: '#141414',
-    logging: false,
-  });
-
+  const canvas = await html2canvas(wrapper, { scale:2, useCORS:true, backgroundColor:'#141414', logging:false });
   document.body.removeChild(wrapper);
   return canvas;
 }
 
 async function downloadImage() {
-  const btn = event.target;
-  const orig = btn.innerHTML;
-  btn.innerHTML = '⏳ Tayyorlanmoqda...';
-  btn.disabled = true;
-
+  const btn = event.target; const orig = btn.innerHTML;
+  btn.innerHTML = '⏳ Tayyorlanmoqda...'; btn.disabled = true;
   try {
     const canvas = await captureResultCanvas();
     const link = document.createElement('a');
-    link.download = `biznes-tahlil-${currentUser || 'natija'}-${Date.now()}.png`;
+    link.download = `biznes-tahlil-${currentUser||'natija'}-${Date.now()}.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
-  } catch(e) {
-    alert('Rasm yaratishda xatolik: ' + e.message);
-  }
-
-  btn.innerHTML = orig;
-  btn.disabled = false;
+  } catch(e) { alert('Rasm yaratishda xatolik: ' + e.message); }
+  btn.innerHTML = orig; btn.disabled = false;
 }
 
 async function downloadPDF() {
-  const btn = event.target;
-  const orig = btn.innerHTML;
-  btn.innerHTML = '⏳ PDF tayyorlanmoqda...';
-  btn.disabled = true;
-
+  const btn = event.target; const orig = btn.innerHTML;
+  btn.innerHTML = '⏳ PDF tayyorlanmoqda...'; btn.disabled = true;
   try {
     const canvas = await captureResultCanvas();
     const { jsPDF } = window.jspdf;
     const imgData = canvas.toDataURL('image/png');
-
-    const pdfW = 210; // A4 mm
+    const pdfW = 210;
     const pdfH = (canvas.height * pdfW) / canvas.width;
-
-    const pdf = new jsPDF({
-      orientation: pdfH > pdfW ? 'portrait' : 'landscape',
-      unit: 'mm',
-      format: pdfH <= 297 ? 'a4' : [pdfW, pdfH],
-    });
-
+    const pdf = new jsPDF({ orientation: pdfH > pdfW ? 'portrait' : 'landscape', unit:'mm', format: pdfH <= 297 ? 'a4' : [pdfW, pdfH] });
     pdf.addImage(imgData, 'PNG', 0, 0, pdfW, pdfH);
-    pdf.save(`biznes-tahlil-${currentUser || 'natija'}-${Date.now()}.pdf`);
-  } catch(e) {
-    alert('PDF yaratishda xatolik: ' + e.message);
-  }
-
-  btn.innerHTML = orig;
-  btn.disabled = false;
+    pdf.save(`biznes-tahlil-${currentUser||'natija'}-${Date.now()}.pdf`);
+  } catch(e) { alert('PDF yaratishda xatolik: ' + e.message); }
+  btn.innerHTML = orig; btn.disabled = false;
 }
 
 function restartQuiz() {
-  currentQuizStep = 0;
-  quizAnswers = {};
+  currentQuizStep = 0; quizAnswers = {};
   document.getElementById('result-screen').style.display = 'none';
   document.getElementById('quiz-screen').style.display = 'flex';
   document.getElementById('result-content').innerHTML = `<div class="result-loading" id="result-loading"><div class="result-spinner"></div><div class="result-loading-text">AI biznesingizni chuqur tahlil qilmoqda...<br><span style="font-size:.78rem;opacity:.6">Iltimos kuting, 10-20 soniya</span></div></div>`;
   renderQuizStep();
 }
 
-
-
 // ============================================================
 // SCROLL REVEAL
-const reveals = document.querySelectorAll('.reveal');
-new IntersectionObserver(entries=>{
-  entries.forEach((e,i)=>{ if(e.isIntersecting){ setTimeout(()=>e.target.classList.add('visible'),i*80); } });
-},{threshold:0.1}).observe && document.querySelectorAll('.reveal').forEach(r=>
-  new IntersectionObserver(entries=>{
-    entries.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('visible'); } });
-  },{threshold:0.1}).observe(r)
+// ============================================================
+document.querySelectorAll('.reveal').forEach(r =>
+  new IntersectionObserver(entries => {
+    entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('visible'); });
+  }, {threshold:0.1}).observe(r)
 );
 </script>
 </body>

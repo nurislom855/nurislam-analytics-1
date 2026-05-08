@@ -715,7 +715,8 @@ function toggleAdminLogin() {
 }
 
 function adminLogin() {
-  if (document.getElementById('admin-pass').value === ADMIN_PASS) {
+  const pass = document.getElementById('admin-pass').value;
+  if (pass === ADMIN_PASS) {
     document.getElementById('reg-overlay').classList.add('hidden');
     showAdminDash();
   } else {
@@ -727,10 +728,14 @@ function adminLogin() {
 document.getElementById('admin-pass').addEventListener('keydown', e => { if(e.key==='Enter') adminLogin(); });
 
 // ADMIN
+let adminUsers = [];
+let selectedAdminUser = null;
+
 function showAdminDash() {
   document.getElementById('admin-dash').classList.add('show');
-  renderUserList();
+  loadAdminUsers();
 }
+
 function exitAdmin() {
   document.getElementById('admin-dash').classList.remove('show');
   document.getElementById('reg-overlay').classList.remove('hidden');
@@ -740,39 +745,143 @@ function exitAdmin() {
   document.getElementById('admin-pass').value = '';
   document.getElementById('admin-pass').placeholder = 'Parolni kiriting';
 }
+
+async function loadAdminUsers() {
+  const list = document.getElementById('admin-user-list');
+  list.innerHTML = '<div style="padding:1rem 1.5rem;font-size:.82rem;color:var(--muted)">Yuklanmoqda...</div>';
+  try {
+    const res = await fetch('/api/admin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'getUsers', adminPass: ADMIN_PASS })
+    });
+    const data = await res.json();
+    if (!res.ok) { list.innerHTML = `<div style="padding:1rem;color:#ff6b6b">${data.error}</div>`; return; }
+    adminUsers = data.users || [];
+    renderUserList();
+  } catch(e) {
+    list.innerHTML = '<div style="padding:1rem;color:#ff6b6b">Xatolik: ' + e.message + '</div>';
+  }
+}
+
 function renderUserList() {
   const list = document.getElementById('admin-user-list');
-  const u = Object.values(users);
-  if (!u.length) { list.innerHTML = '<div style="padding:1rem 1.5rem;font-size:.82rem;color:var(--muted)">Hali hech kim ro\'yxatdan o\'tmagan</div>'; return; }
-  list.innerHTML = u.map(user => {
+  if (!adminUsers.length) {
+    list.innerHTML = '<div style="padding:1rem 1.5rem;font-size:.82rem;color:var(--muted)">Hali hech kim ro\'yxatdan o\'tmagan</div>';
+    return;
+  }
+  list.innerHTML = adminUsers.map((user, i) => {
     const ini = user.name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
-    return `<div class="user-item" onclick="selectUser('${user.name}', this)">
+    const date = user.createdAt ? new Date(user.createdAt).toLocaleDateString('uz-UZ') : '-';
+    return `<div class="user-item" onclick="selectAdminUser(${i}, this)">
       <div class="u-avatar">${ini}</div>
-      <div><div class="u-name">${user.name}</div><div class="u-time">${user.time}</div></div>
-      ${user.msgs.length ? `<div class="u-badge">${user.msgs.length}</div>` : ''}
+      <div style="flex:1;min-width:0">
+        <div class="u-name">${user.name}</div>
+        <div class="u-time">${user.email}</div>
+        <div class="u-time">${date}</div>
+      </div>
+      ${user.msgsCount ? `<div class="u-badge">${user.msgsCount}</div>` : ''}
     </div>`;
   }).join('');
 }
-function selectUser(name, el) {
-  document.querySelectorAll('.user-item').forEach(i=>i.classList.remove('active'));
+
+function selectAdminUser(i, el) {
+  document.querySelectorAll('.user-item').forEach(x => x.classList.remove('active'));
   el.classList.add('active');
-  const user = users[name];
+  selectedAdminUser = adminUsers[i];
+  const user = selectedAdminUser;
+
   document.getElementById('admin-no-sel').style.display = 'none';
   const cv = document.getElementById('admin-chat-view');
   cv.style.display = 'flex';
-  const ini = name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+
+  const ini = user.name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
   document.getElementById('admin-sel-avatar').textContent = ini;
-  document.getElementById('admin-sel-name').textContent = name;
-  document.getElementById('admin-sel-time').textContent = 'Ro\'yxatdan: ' + user.time;
+  document.getElementById('admin-sel-name').textContent = user.name;
+
+  const createdAt = user.createdAt ? new Date(user.createdAt).toLocaleString('uz-UZ') : '-';
+  const lastLogin = user.lastLogin ? new Date(user.lastLogin).toLocaleString('uz-UZ') : 'Hali kirmagan';
+  document.getElementById('admin-sel-time').textContent = `📧 ${user.email} · Ro'yxat: ${createdAt} · Oxirgi: ${lastLogin}`;
+
+  // Parol tiklash va o'chirish tugmalari
   const msgs = document.getElementById('admin-chat-msgs');
-  if (!user.msgs.length) { msgs.innerHTML='<div class="admin-empty">Bu foydalanuvchi hali AI bilan suhbat qilmagan.</div>'; return; }
-  msgs.innerHTML = user.msgs.map(m => `
-    <div class="am ${m.role}">
-      <div class="am-meta">${m.role==='user'?name:'AI Maslahatchi'} · ${m.time}</div>
-      <div class="am-bubble">${m.text.replace(/</g,'&lt;')}</div>
-    </div>`).join('');
-  msgs.scrollTop = msgs.scrollHeight;
+  msgs.innerHTML = `
+    <div style="padding:1rem;display:flex;gap:.75rem;flex-wrap:wrap;border-bottom:1px solid rgba(201,168,76,0.1);margin-bottom:1rem">
+      <div style="display:flex;gap:.5rem;align-items:center;flex:1">
+        <input id="new-pass-input" type="text" placeholder="Yangi parol kiriting"
+          style="flex:1;padding:.5rem .75rem;background:var(--dark3);border:1px solid rgba(201,168,76,0.2);border-radius:4px;color:var(--light);font-family:'DM Sans',sans-serif;font-size:.82rem">
+        <button onclick="resetUserPassword('${user.email}')"
+          style="padding:.5rem 1rem;background:rgba(201,168,76,0.15);border:1px solid rgba(201,168,76,0.3);color:var(--gold);border-radius:4px;cursor:pointer;font-size:.8rem;white-space:nowrap">
+          🔑 Parolni tiklash
+        </button>
+      </div>
+      <button onclick="deleteUser('${user.email}')"
+        style="padding:.5rem 1rem;background:rgba(255,80,80,0.1);border:1px solid rgba(255,80,80,0.3);color:#ff6b6b;border-radius:4px;cursor:pointer;font-size:.8rem">
+        🗑️ O'chirish
+      </button>
+    </div>
+    <div id="admin-action-msg" style="padding:0 1rem;font-size:.8rem;min-height:18px;color:var(--gold)"></div>
+    <div style="padding:1rem;font-size:.82rem;color:var(--muted)">Tahlillar: ${user.msgsCount || 0} ta</div>
+  `;
 }
+
+async function resetUserPassword(email) {
+  const newPass = document.getElementById('new-pass-input').value.trim();
+  const msgEl = document.getElementById('admin-action-msg');
+  if (!newPass || newPass.length < 6) { msgEl.style.color='#ff6b6b'; msgEl.textContent = 'Parol kamida 6 ta belgi bo\'lishi kerak'; return; }
+
+  msgEl.style.color = 'var(--gold)';
+  msgEl.textContent = 'Yangilanmoqda...';
+
+  try {
+    const res = await fetch('/api/admin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'resetPassword', adminPass: ADMIN_PASS, email, newPassword: newPass })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      msgEl.style.color = '#4caf50';
+      msgEl.textContent = '✅ Parol muvaffaqiyatli yangilandi!';
+      document.getElementById('new-pass-input').value = '';
+    } else {
+      msgEl.style.color = '#ff6b6b';
+      msgEl.textContent = '❌ ' + data.error;
+    }
+  } catch(e) {
+    msgEl.style.color = '#ff6b6b';
+    msgEl.textContent = '❌ Xatolik: ' + e.message;
+  }
+}
+
+async function deleteUser(email) {
+  if (!confirm(`${email} foydalanuvchisini o'chirishni tasdiqlaysizmi?`)) return;
+  const msgEl = document.getElementById('admin-action-msg');
+  msgEl.style.color = 'var(--gold)';
+  msgEl.textContent = 'O\'chirilmoqda...';
+
+  try {
+    const res = await fetch('/api/admin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'deleteUser', adminPass: ADMIN_PASS, email })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      adminUsers = adminUsers.filter(u => u.email !== email);
+      renderUserList();
+      document.getElementById('admin-no-sel').style.display = 'block';
+      document.getElementById('admin-chat-view').style.display = 'none';
+    } else {
+      msgEl.style.color = '#ff6b6b';
+      msgEl.textContent = '❌ ' + data.error;
+    }
+  } catch(e) {
+    msgEl.style.color = '#ff6b6b';
+    msgEl.textContent = '❌ Xatolik: ' + e.message;
+  }
+}
+
 function saveUsers() { localStorage.setItem('nba_users', JSON.stringify(users)); }
 
 // AI MODAL
@@ -1098,10 +1207,15 @@ Maslahat aniq, amaliy va O'zbekiston biznes muhitiga mos bo'lsin.`;
   try {
     const res = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": "sk-ant-api03-tCFnBiISIHJxfKhEJI5Kc8SLW0Ry6LtHNRAlqMnkdgjWaXBXiR7nMh4uWb8Pd6aQDEJBp1JuL1hkMD3MH9_dQ-JYXO7gAA",
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true"
+      },
       body: JSON.stringify({
         model: "claude-sonnet-4-20250514",
-        max_tokens: 1000,
+        max_tokens: 1500,
         messages: [{ role: "user", content: prompt }]
       })
     });

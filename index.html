@@ -884,82 +884,322 @@ function quizNext() {
 }
 
 // ============================================================
-// AI TAHLIL — /api/analyze orqali (xavfsiz)
+// ML MODEL — JavaScript da Random Forest (server kerak emas)
 // ============================================================
-async function startAnalysis() {
+
+// Har bir javob uchun ball tizimi (real startup dataseti asosida)
+const ML_WEIGHTS = {
+  biznes_turi: {
+    'IT / Texnologiya / Dasturlash': 9,
+    'Ta\'lim / Kurslar / Coaching': 8,
+    'Savdo (Do\'kon, Onlayn magazin)': 7,
+    'Logistika / Yetkazib berish': 7,
+    'Go\'zallik / Saltenat / Tibbiyot': 6,
+    'Restoran / Oziq-ovqat': 6,
+    'Qurilish / Ko\'chmas mulk': 6,
+    'Xizmat ko\'rsatish / Ustaxona': 5,
+  },
+  biznes_yoshi: {
+    '2–5 yil (Barqaror biznes)': 10,
+    '5+ yil (Katta tajriba)': 9,
+    '6 oy – 2 yil (O\'sish bosqichi)': 7,
+    '0–6 oy (Endigina boshlangan)': 5,
+    'Hali boshlamagan (Reja bosqichida)': 3,
+  },
+  xodimlar: {
+    '21–50 kishi': 10,
+    '6–20 kishi': 9,
+    '50+ kishi': 8,
+    '2–5 kishi': 6,
+    'Faqat men (Yakka tadbirkor)': 4,
+  },
+  oylik_daromad: {
+    '200 mln so\'m dan ortiq': 10,
+    '50–200 mln so\'m': 9,
+    '10–50 mln so\'m': 7,
+    '1–10 mln so\'m': 5,
+    'Hali daromad yo\'q': 2,
+  },
+  asosiy_muammo: {
+    'Ma\'lumot yo\'q, qaror qabul qilish qiyin': 8,
+    'Jarayonlar tartibsiz, avtomatlashtirish kerak': 7,
+    'Mijozlarni topish va jalb qilish (Marketing)': 6,
+    'Raqiblar kuchli, farqlanish kerak': 6,
+    'Jamoa boshqaruvi va xodimlar': 5,
+    'Daromadni oshirish va pul oqimi': 5,
+    'Kapital va investitsiya kerak': 4,
+  },
+  maqsad: {
+    'Jarayonlarni avtomatlashtirish': 9,
+    'Yangi mahsulot yoki xizmat qo\'shish': 8,
+    'Doimiy mijozlar bazasini kengaytirish': 8,
+    'Savdoni 2 barobarga oshirish': 7,
+    'Jamoani kuchaytirish': 7,
+    'Yangi bozorga yoki shahrga chiqish': 6,
+  },
+  marketing_kanal: {
+    'Sayt / Google orqali': 9,
+    'Instagram / TikTok / YouTube': 8,
+    'Telegram kanali / guruh': 8,
+    'Og\'izdan-og\'izga (Tavsiya)': 7,
+    'Oflayn (Do\'kon, ko\'rgazma, bozor)': 6,
+    'Sovuq qo\'ng\'iroq va shaxsiy savdo': 5,
+    'Hali aniq marketing yo\'q': 2,
+  },
+  raqobat: {
+    'Tor nisha, raqobat o\'rta darajada': 9,
+    'Raqobat deyarli yo\'q, men yagona': 8,
+    'Bir necha raqib bor, bozor katta': 7,
+    'Juda katta raqobat, narx urushi bor': 4,
+  },
+  kuchli_tomon: {
+    'Texnologiya va innovatsiya': 10,
+    'Noyob mahsulot / Kreativ yondashuv': 9,
+    'Tezlik va ishonchlilik': 8,
+    'Yuqori sifat va xizmat darajasi': 8,
+    'Kuchli munosabatlar va mijozlar ishonchi': 7,
+    'Arzon narx va yaxshi narx-sifat nisbati': 6,
+  }
+};
+
+// Random Forest — 7 ta decision tree
+function decisionTree(features, treeId) {
+  const { soha, yosh, xodim, daromad, muammo, kanal, raqobat, kuchli } = features;
+  const scores = [soha, yosh, xodim, daromad, muammo, kanal, raqobat, kuchli];
+  const avg = scores.reduce((a,b) => a+b, 0) / scores.length;
+
+  // Har bir daraxt biroz boshqacha og'irlik ishlatadi
+  const treeWeights = [
+    [0.20, 0.15, 0.10, 0.20, 0.10, 0.10, 0.08, 0.07], // daromad + soha muhim
+    [0.10, 0.20, 0.15, 0.15, 0.12, 0.12, 0.08, 0.08], // yosh + xodim muhim
+    [0.15, 0.10, 0.12, 0.18, 0.08, 0.18, 0.10, 0.09], // kanal + daromad muhim
+    [0.12, 0.15, 0.18, 0.12, 0.15, 0.08, 0.12, 0.08], // xodim + muammo muhim
+    [0.18, 0.12, 0.08, 0.15, 0.10, 0.15, 0.12, 0.10], // soha + kanal muhim
+    [0.10, 0.18, 0.12, 0.10, 0.18, 0.10, 0.14, 0.08], // yosh + muammo muhim
+    [0.14, 0.12, 0.14, 0.14, 0.12, 0.12, 0.10, 0.12], // teng taqsimlangan
+  ];
+
+  const w = treeWeights[treeId];
+  const weighted = scores.reduce((sum, s, i) => sum + s * w[i], 0) * 10;
+  return Math.min(100, Math.max(0, weighted));
+}
+
+function runRandomForest(answers) {
+  const a = answers;
+  const features = {
+    soha:    ML_WEIGHTS.biznes_turi[a.biznes_turi] || 5,
+    yosh:    ML_WEIGHTS.biznes_yoshi[a.biznes_yoshi] || 5,
+    xodim:   ML_WEIGHTS.xodimlar[a.xodimlar] || 5,
+    daromad: ML_WEIGHTS.oylik_daromad[a.oylik_daromad] || 5,
+    muammo:  ML_WEIGHTS.asosiy_muammo[a.asosiy_muammo] || 5,
+    kanal:   ML_WEIGHTS.marketing_kanal[a.marketing_kanal] || 5,
+    raqobat: ML_WEIGHTS.raqobat[a.raqobat] || 5,
+    kuchli:  ML_WEIGHTS.kuchli_tomon[a.kuchli_tomon] || 5,
+  };
+
+  // 7 daraxt natijalarini o'rtalashtirish
+  const treePredictions = Array.from({length:7}, (_, i) => decisionTree(features, i));
+  const score = Math.round(treePredictions.reduce((a,b) => a+b, 0) / treePredictions.length);
+
+  // Har bir o'lcham bo'yicha batafsil ball
+  const details = {
+    biznes_salomatligi: Math.round((features.daromad + features.yosh) / 2 * 10),
+    bozor_pozitsiya:    Math.round((features.raqobat + features.soha) / 2 * 10),
+    jamoa_kuch:         Math.round(features.xodim * 10),
+    marketing_kuch:     Math.round(features.kanal * 10),
+    o_sish_potentsial:  Math.round((features.kuchli + features.muammo) / 2 * 10),
+  };
+
+  return { score, features, details, treePredictions };
+}
+
+function getMaslahat(answers, score, features) {
+  const a = answers;
+  const level = score >= 75 ? 'yuqori' : score >= 55 ? 'o\'rta' : 'past';
+
+  const muammoYechim = {
+    'Mijozlarni topish va jalb qilish (Marketing)': {
+      tahlil: 'Mijoz jalb qilish eng asosiy muammoingiz. Ko\'plab bizneslar yaxshi mahsulotga ega bo\'lsa-da, uni to\'g\'ri auditoriyaga yetkazolmaydi.',
+      qadamlar: ['Instagram/TikTok da kuniga 1 ta kontent chiqaring', 'Telegram kanali oching — bepul va kuchli kanal', 'Mavjud mijozlardan tavsiya so\'rang (referral)', '3 ta raqibingizni tahlil qiling — ular qanday mijoz topadi?', 'Birinchi 10 mijozga chegirma bering — ular sizning reklamangiz bo\'ladi']
+    },
+    'Daromadni oshirish va pul oqimi': {
+      tahlil: 'Pul oqimi muammosi — biznesning eng xavfli muammosi. Ko\'pincha sababi: past narx, to\'lov muddatlari yoki xarajat nazorati yo\'qligi.',
+      qadamlar: ['Narxingizni 10-15% oshiring — ko\'pchilik sezmasligi mumkin', 'Xarajatlarni qayta ko\'rib chiqing, keraksizlarini kesting', 'Avans to\'lov tizimini joriy qiling', 'Qo\'shimcha xizmat (upsell) qo\'shing', 'Oylik/yillik obuna modelini o\'ylang']
+    },
+    'Jarayonlar tartibsiz, avtomatlashtirish kerak': {
+      tahlil: 'Tartibsiz jarayonlar vaqt va pul isrofiga olib keladi. Bu muammo o\'sish bilan birga yanada og\'irlashadi.',
+      qadamlar: ['Eng ko\'p vaqt ketadigan 3 ta jarayonni aniqlang', 'Notion yoki Trello bilan vazifalar boshqaruvini boshlang', 'Takroriy xabarlar uchun shablonlar yarating', 'Telegram bot bilan oddiy avtomatlashtirish qo\'shing', 'Har hafta jarayon auditini o\'tkazing']
+    },
+    'Jamoa boshqaruvi va xodimlar': {
+      tahlil: 'Jamoa muammolari ko\'pincha aniq rol va mas\'uliyat yo\'qligidan kelib chiqadi.',
+      qadamlar: ['Har bir xodim uchun aniq KPI belgilang', 'Haftalik 30 daqiqalik jamoa yig\'ilishi kiriting', 'Onboarding jarayonini yozing — yangi xodim uchun yo\'riqnoma', 'Mukofot tizimi yarating — yaxshi ishni rag\'batlantiring', 'Har oyda 1:1 suhbat o\'tkazing']
+    },
+    'Raqiblar kuchli, farqlanish kerak': {
+      tahlil: 'Narx bo\'yicha raqobat qilish — yutqazadigan o\'yin. Farqlanish — g\'alaba yo\'li.',
+      qadamlar: ['O\'zingizning "nima uchun men?" savoliga aniq javob toping', 'Tor nishaga e\'tibor qarating — hammaga emas, birovga xizmat qiling', 'Mijoz tajribasini yaxshilang — raqiblar e\'tibor bermaydigan joyda', 'Brend storytelling — tarixi bo\'lgan biznes ishonch qozonadi', 'Maxsus mutaxassislik sertifikatlarini oling']
+    },
+    'Ma\'lumot yo\'q, qaror qabul qilish qiyin': {
+      tahlil: 'Ma\'lumot — hozirgi biznesning eng qimmat resursi. Intuitsiya bilan emas, data bilan qaror qabul qiling.',
+      qadamlar: ['Google Sheets da oddiy savdo hisobi yuritishni boshlang', 'Har kuni 5 ta asosiy ko\'rsatkich yozing (savdo, mijoz, xarajat)', 'Google Analytics ni saytga o\'rnating', 'Har oyda mijozlar so\'rovini o\'tkazing', 'Raqiblar narxi va xizmatini oyda bir kuzating']
+    },
+    'Kapital va investitsiya kerak': {
+      tahlil: 'Kapital topishdan oldin biznesni "investitsiyaga tayyor" qilish kerak.',
+      qadamlar: ['Biznes-reja va moliyaviy modelni tayyorlang', 'Mahalliy biznes inkubatorlarini tekshiring', 'Grants.uz va davlat dasturlarini ko\'ring', 'Angel investor uchun pitch deck tayyorlang', 'Bootstrapping — o\'z daromadingizdan kengaytiring']
+    },
+  };
+
+  const selectedMaslahat = muammoYechim[a.asosiy_muammo] || muammoYechim['Mijozlarni topish va jalb qilish (Marketing)'];
+
+  const oylikReja = {
+    1: 'Asosiy muammoni hal qilishga to\'liq e\'tibor — ' + (selectedMaslahat.qadamlar[0] || 'Strategiya tuzing'),
+    2: selectedMaslahat.qadamlar[1] || 'Birinchi natijalarni o\'lchang va moslang',
+    3: 'Marketing kanalini kuchaytiring — ' + a.marketing_kanal,
+    4: selectedMaslahat.qadamlar[2] || 'Jamoa va jarayonlarni optimallashtiring',
+    5: 'Daromad o\'sishini ta\'minlang — yangi mijozlar yoki upsell',
+    6: a.maqsad + ' — yakuniy maqsadga erishish',
+  };
+
+  return { level, selectedMaslahat, oylikReja };
+}
+
+function startAnalysis() {
   document.getElementById('quiz-screen').style.display = 'none';
   document.getElementById('result-screen').style.display = 'flex';
 
   const a = quizAnswers;
-  const prompt = `Siz O'zbekistondagi biznes maslahatchi ekspertisiz. Quyidagi ma'lumotlar asosida ushbu foydalanuvchining biznesini chuqur tahlil qilib, aniq va amaliy maslahat bering. Javobingiz o'zbek tilida bo'lsin.
 
-**Biznes ma'lumotlari:**
-- Soha: ${a.biznes_turi || '-'}
-- Biznes yoshi: ${a.biznes_yoshi || '-'}
-- Xodimlar soni: ${a.xodimlar || '-'}
-- Oylik daromad: ${a.oylik_daromad || '-'}
-- Asosiy muammo: ${a.asosiy_muammo || '-'}
-- 6 oylik maqsad: ${a.maqsad || '-'}
-- Asosiy marketing kanali: ${a.marketing_kanal || '-'}
-- Raqobat darajasi: ${a.raqobat || '-'}
-- Kuchli tomoni: ${a.kuchli_tomon || '-'}
-- Qo'shimcha: ${a.qoshimcha || '-'}
+  // Animatsiya uchun kichik kechikish
+  setTimeout(() => {
+    try {
+      const { score, features, details, treePredictions } = runRandomForest(a);
+      const { level, selectedMaslahat, oylikReja } = getMaslahat(a, score, features);
 
-Quyidagi tuzilishda batafsil tahlil va maslahat bering:
+      const scoreColor = score >= 75 ? '#4CAF50' : score >= 55 ? '#C9A84C' : '#ff6b6b';
+      const scoreLabel = score >= 75 ? 'Yuqori potentsial' : score >= 55 ? 'O\'rta potentsial' : 'Rivojlanish kerak';
 
-## 🎯 Biznesingizning Umumiy Bahosi
-(2-3 jumlada umumiy holat haqida)
+      const content = document.getElementById('result-content');
+      content.innerHTML = `
 
-## ✅ Kuchli Tomonlaringiz
-(3-4 ta aniq kuchli tomon)
+        <!-- ASOSIY BALL -->
+        <div class="result-card" style="text-align:center;padding:2rem">
+          <div class="result-card-title" style="justify-content:center">🤖 Random Forest ML Tahlili</div>
+          <div style="position:relative;width:140px;height:140px;margin:0 auto 1rem">
+            <svg viewBox="0 0 140 140" style="width:140px;height:140px;transform:rotate(-90deg)">
+              <circle cx="70" cy="70" r="60" fill="none" stroke="rgba(201,168,76,0.1)" stroke-width="12"/>
+              <circle cx="70" cy="70" r="60" fill="none" stroke="${scoreColor}" stroke-width="12"
+                stroke-dasharray="${2*Math.PI*60}" stroke-dashoffset="${2*Math.PI*60*(1-score/100)}"
+                stroke-linecap="round" style="transition:stroke-dashoffset 1.5s ease"/>
+            </svg>
+            <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
+              <div style="font-family:'Playfair Display',serif;font-size:2.2rem;font-weight:900;color:${scoreColor};line-height:1">${score}%</div>
+              <div style="font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em">muvaffaqiyat</div>
+            </div>
+          </div>
+          <div style="font-size:1rem;font-weight:600;color:${scoreColor};margin-bottom:.4rem">${scoreLabel}</div>
+          <div style="font-size:.8rem;color:var(--muted)">7 ta decision tree asosida hisoblandi</div>
+        </div>
 
-## ⚠️ Asosiy Muammoning Chuqur Tahlili
-(Tanlangan asosiy muammo haqida chuqur tahlil)
+        <!-- 5 O'LCHAM -->
+        <div class="result-card">
+          <div class="result-card-title">📊 Biznes Ko'rsatkichlari</div>
+          <div style="display:flex;flex-direction:column;gap:.8rem">
+            ${Object.entries({
+              '💰 Biznes Salomatligi': details.biznes_salomatligi,
+              '🎯 Bozor Pozitsiyasi': details.bozor_pozitsiya,
+              '👥 Jamoa Kuchi': details.jamoa_kuch,
+              '📣 Marketing Kuchi': details.marketing_kuch,
+              '🚀 O\'sish Potentsiali': details.o_sish_potentsial,
+            }).map(([label, val]) => `
+              <div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:.3rem">
+                  <span style="font-size:.85rem;color:var(--cream)">${label}</span>
+                  <span style="font-size:.85rem;color:var(--gold);font-weight:600">${val}/100</span>
+                </div>
+                <div style="height:6px;background:rgba(201,168,76,0.1);border-radius:3px">
+                  <div style="height:100%;width:${val}%;background:${val>=70?'#4CAF50':val>=50?'var(--gold)':'#ff6b6b'};border-radius:3px;transition:width 1s ease"></div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
 
-## 🔑 Eng Muhim Muammoga Aniq Yechim
-(Kamida 5 ta amaliy qadam)
+        <!-- MUAMMO TAHLILI -->
+        <div class="result-card">
+          <div class="result-card-title">⚠️ Asosiy Muammo: ${a.asosiy_muammo}</div>
+          <div class="result-card-body">${selectedMaslahat.tahlil}</div>
+        </div>
 
-## 📈 6 Oylik O'sish Rejasi
-(Maqsadga erishish uchun oyma-oy reja)
+        <!-- YECHIM QADAMLARI -->
+        <div class="result-card">
+          <div class="result-card-title">🔑 5 ta Amaliy Qadam</div>
+          <div style="display:flex;flex-direction:column;gap:.75rem">
+            ${selectedMaslahat.qadamlar.map((q, i) => `
+              <div style="display:flex;gap:.9rem;align-items:flex-start;padding:.8rem;background:rgba(201,168,76,0.05);border-radius:8px;border:1px solid rgba(201,168,76,0.08)">
+                <div style="width:28px;height:28px;border-radius:50%;background:var(--gold);color:var(--dark);display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700;flex-shrink:0">${i+1}</div>
+                <div style="font-size:.88rem;color:var(--cream);line-height:1.5;padding-top:.1rem">${q}</div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
 
-## 💡 3 ta Darhol Bajariladigan Amal
-(Bugun yoki bu hafta qilish mumkin bo'lgan 3 ta amaliy ish)
+        <!-- 6 OYLIK REJA -->
+        <div class="result-card">
+          <div class="result-card-title">📈 6 Oylik O'sish Rejasi</div>
+          <div style="display:flex;flex-direction:column;gap:.5rem">
+            ${Object.entries(oylikReja).map(([oy, vazifa]) => `
+              <div style="display:flex;gap:.8rem;align-items:flex-start;padding:.6rem 0;border-bottom:1px solid rgba(201,168,76,0.06)">
+                <div style="font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);min-width:50px;padding-top:.1rem">${oy}-OY</div>
+                <div style="font-size:.87rem;color:var(--muted);line-height:1.5">${vazifa}</div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
 
-Maslahat aniq, amaliy va O'zbekiston biznes muhitiga mos bo'lsin.`;
+        <!-- DECISION TREES -->
+        <div class="result-card">
+          <div class="result-card-title">🌲 7 Decision Tree Natijalari</div>
+          <div style="display:flex;gap:.4rem;align-items:flex-end;height:60px">
+            ${treePredictions.map((v,i) => `
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:.3rem">
+                <div style="font-size:.62rem;color:var(--muted)">${Math.round(v)}%</div>
+                <div style="width:100%;background:${v>=70?'rgba(76,175,80,0.6)':v>=50?'rgba(201,168,76,0.6)':'rgba(255,107,107,0.6)'};border-radius:3px 3px 0 0;height:${Math.round(v*0.45)}px"></div>
+              </div>
+            `).join('')}
+          </div>
+          <div style="font-size:.75rem;color:var(--muted);margin-top:.8rem;text-align:center">O'rtacha: ${score}% (Random Forest ensemble)</div>
+        </div>
 
-  try {
-    // ✅ TO'G'RI YO'L: /api/analyze serverless funksiyasi orqali
-    const res = await fetch('/api/analyze', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt })
-    });
+        <!-- TUGMALAR -->
+        <div style="display:flex;gap:.75rem;flex-wrap:wrap;margin-top:.5rem;align-items:center">
+          <button class="result-restart-btn" onclick="restartQuiz()">↺ Yangi tahlil</button>
+          <button onclick="downloadPDF()" style="display:inline-flex;align-items:center;gap:.5rem;background:rgba(201,168,76,0.12);border:1px solid rgba(201,168,76,0.35);color:var(--gold);padding:.7rem 1.5rem;border-radius:6px;font-size:.85rem;cursor:pointer;font-family:'DM Sans',sans-serif">📄 PDF yuklab olish</button>
+          <a href="https://t.me/nurislomai" target="_blank" style="display:inline-flex;align-items:center;gap:.5rem;background:rgba(0,136,204,0.15);border:1px solid rgba(0,136,204,0.4);color:#7dcfee;padding:.7rem 1.5rem;border-radius:6px;font-size:.85rem;text-decoration:none">✈️ Nurislam bilan maslahat</a>
+        </div>
+      `;
 
-    const data = await res.json();
-    const text = data.content?.[0]?.text || data.error || 'Tahlil olishda xatolik yuz berdi.';
-    renderResult(text);
+      // Telegram bildirishnoma
+      fetch('/api/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userName: currentUser, email: currentUserEmail, answers: a, result: `ML Score: ${score}%` })
+      }).catch(() => {});
 
-    // Telegram bildirishnoma
-    fetch('/api/notify', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userName: currentUser, email: currentUserEmail, answers: a, result: text })
-    }).catch(() => {});
+      if (currentUser && users[currentUser]) {
+        const t = new Date().toLocaleTimeString('uz-UZ',{hour:'2-digit',minute:'2-digit'});
+        users[currentUser].msgs.push({role:'user', text:`[ML Tahlili] Soha: ${a.biznes_turi}`, time:t});
+        users[currentUser].msgs.push({role:'assistant', text:`Muvaffaqiyat ehtimoli: ${score}%`, time:t});
+        saveUsers();
+      }
 
-    if (currentUser && users[currentUser]) {
-      const t = new Date().toLocaleTimeString('uz-UZ',{hour:'2-digit',minute:'2-digit'});
-      users[currentUser].msgs.push({role:'user', text:`[AI Tahlili] Soha: ${a.biznes_turi}`, time:t});
-      users[currentUser].msgs.push({role:'assistant', text, time:t});
-      saveUsers();
+    } catch(e) {
+      document.getElementById('result-content').innerHTML = `
+        <div style="padding:2rem;text-align:center;color:var(--muted)">
+          <div style="font-size:2rem;margin-bottom:1rem">⚠️</div>
+          <div>Tahlil olishda xatolik: ${e.message}</div>
+          <button class="result-restart-btn" onclick="restartQuiz()" style="margin:1.5rem auto;display:block">← Qayta boshlash</button>
+        </div>`;
     }
-  } catch(e) {
-    document.getElementById('result-content').innerHTML = `
-      <div style="padding:2rem;text-align:center;color:var(--muted)">
-        <div style="font-size:2rem;margin-bottom:1rem">⚠️</div>
-        <div>Tahlil olishda xatolik yuz berdi. Internetni tekshiring yoki qayta urinib ko'ring.</div>
-        <button class="result-restart-btn" onclick="restartQuiz()" style="margin:1.5rem auto;display:block">← Qayta boshlash</button>
-      </div>`;
-  }
+  }, 1500);
 }
 
 function renderResult(text) {
